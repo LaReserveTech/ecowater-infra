@@ -3,6 +3,8 @@ import boto3
 import json
 import psycopg2
 
+RAW_PATH = "/dev/which-zone"
+
 #Lambda environment variables
 ENVIRONMENT = os.environ['environment']
 
@@ -32,12 +34,17 @@ def getCredentials():
     return credential
     
 def lambda_handler(event, context):
-    credential = getCredentials()
-    connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
-    cursor = connection.cursor()
-    query = "SELECT * FROM localites WHERE ST_Intersects('POINT(2.23867632216 48.8364966292)'::geography::geometry,wkb_geometry);"
-    cursor.execute(query)
-    results = cursor.fetchone()
-    cursor.close()
-    connection.commit()
-    return results
+    if event['rawPath'] == RAW_PATH:
+      longitude = event['queryStringParameters']['longitude']
+      latitude = event['queryStringParameters']['latitude']
+      credential = getCredentials()
+      connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
+      cursor = connection.cursor()
+      query = "SELECT * FROM localites WHERE ST_Intersects('POINT({} {})'::geography::geometry,wkb_geometry);".format(longitude,latitude)
+      cursor.execute(query)
+      results = cursor.fetchone()
+      cursor.close()
+      connection.commit()
+      return results
+    else:
+      return {"message" : "error"}
