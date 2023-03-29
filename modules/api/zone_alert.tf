@@ -9,7 +9,7 @@ resource "random_uuid" "lambda_src_hash" {
 
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_file      = "${local.lambda_src_path}/package/*"
+  source_dir      = "${local.lambda_src_path}/package"
   output_file_mode = "0755"
   output_path      = "${local.lambda_src_path}/${random_uuid.lambda_src_hash.result}.zip"
 
@@ -26,8 +26,8 @@ module "lambda_ecowater_zone" {
   handler                = "index.lambda_handler"
   runtime                = "python3.9"
   create_role            = true
-  attach_policy_json     = true
-  policy_json            = data.template_file.lambda_ecowater_zone_policy.rendered
+  attach_policy          = true
+  policy                 = aws_iam_policy.lambda_ecowater_zone.arn
   attach_network_policy  = true
   attach_tracing_policy  = true
   vpc_subnet_ids         = [var.default_subnet_c_id] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
@@ -36,7 +36,7 @@ module "lambda_ecowater_zone" {
   timeout                = 60
   create_package         = false
   create_function        = true
-  local_existing_package = "${local.lambda_src_path}/package/${random_uuid.lambda_src_hash.result}.zip"
+  local_existing_package = "${local.lambda_src_path}/${random_uuid.lambda_src_hash.result}.zip"
   publish                = true
   environment_variables = {
     environment = local.environment
@@ -54,18 +54,32 @@ resource "aws_lambda_alias" "lambda_ecowater_zone" {
   ]
 }
 
-data "template_file" "lambda_ecowater_zone_policy" {
-  template = file("${path.module}/iam_policy/lambda_ecowater_zone_policy.json")
-  vars = {
-    db_creds     = var.db_creds
-    db_creds_kms = var.db_creds_kms
-  }
+resource "aws_iam_policy" "lambda_ecowater_zone" {
+  name   = "lambda_ecowater_zone-${local.environment}"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:GetSecretValue"
+            ],
+            "Resource": [
+                "${var.db_creds}"
+              ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+              "kms:Decrypt"
+            ],
+            "Resource": "${var.db_creds_kms}"
+        }
+  ]
 }
-
-#resource "aws_iam_policy" "lambda_ecowater_zone" {
-#name   = "lambda_ecowater_zone-${local.environment}"
-#policy = data.template_file.lambda_ecowater_zone_policy.rendered
-#}
+EOF
+}
 
 resource "aws_lambda_permission" "zone_alert" {
   statement_id  = "AllowExecutionFromAPIGateway"
