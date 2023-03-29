@@ -37,6 +37,8 @@ data "aws_subnets" "private" {
 
 #Private route table for the Ecowater DB instance's private subnet
 resource "aws_route_table" "private-route" {
+  count = local.environment == "dev" ? 1 : 0
+
   vpc_id = aws_default_vpc.default.id
   route {
     cidr_block     = "0.0.0.0/0" #For the Lambda to be reachable by the API
@@ -52,7 +54,7 @@ resource "aws_route_table_association" "private-route" {
   for_each = toset(data.aws_subnets.private.ids)
 
   subnet_id      = each.value
-  route_table_id = aws_route_table.private-route.id
+  route_table_id = aws_route_table.private-route[0].id
 }
 
 #Lambda network configuration

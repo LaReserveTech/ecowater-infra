@@ -9,9 +9,9 @@ resource "random_uuid" "lambda_src_hash" {
 
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_file      = "${local.lambda_src_path}/index.py"
+  source_file      = "${local.lambda_src_path}/package/*"
   output_file_mode = "0755"
-  output_path      = "${local.lambda_src_path}/package/${random_uuid.lambda_src_hash.result}.zip"
+  output_path      = "${local.lambda_src_path}/${random_uuid.lambda_src_hash.result}.zip"
 
   depends_on = [
     random_uuid.lambda_src_hash
@@ -26,6 +26,8 @@ module "lambda_ecowater_zone" {
   handler                = "index.lambda_handler"
   runtime                = "python3.9"
   create_role            = true
+  attach_policy_json     = true
+  policy_json            = data.template_file.lambda_ecowater_zone_policy.rendered
   attach_network_policy  = true
   attach_tracing_policy  = true
   vpc_subnet_ids         = [var.default_subnet_c_id] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
@@ -52,12 +54,25 @@ resource "aws_lambda_alias" "lambda_ecowater_zone" {
   ]
 }
 
+data "template_file" "lambda_ecowater_zone_policy" {
+  template = file("${path.module}/iam_policy/lambda_ecowater_zone_policy.json")
+  vars = {
+    db_creds     = var.db_creds
+    db_creds_kms = var.db_creds_kms
+  }
+}
+
+#resource "aws_iam_policy" "lambda_ecowater_zone" {
+#name   = "lambda_ecowater_zone-${local.environment}"
+#policy = data.template_file.lambda_ecowater_zone_policy.rendered
+#}
+
 resource "aws_lambda_permission" "zone_alert" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = module.lambda_ecowater_zone.lambda_function_name
   principal     = "apigateway.amazonaws.com"
-  #source_arn    = "${aws_apigatewayv2_api.zone_alert.arn}/*"
+  #source_arn    = "${aws_apigatewayv2_api.zone_alert.arn}/*"  doesn't seem to work
 }
 
 

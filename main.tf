@@ -14,6 +14,8 @@ module "database" {
 module "api" {
   source = "./modules/api"
 
-  default_subnet_c_id       = module.common.default_subnet_c_id
-  lambda_zone_sg_id         = module.common.lambda_zone_sg_id
+  default_subnet_c_id = module.common.default_subnet_c_id
+  lambda_zone_sg_id   = module.common.lambda_zone_sg_id
+  db_creds            = module.database.db_creds
+  db_creds_kms        = module.database.db_creds_kms
 }
