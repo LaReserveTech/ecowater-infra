@@ -3,15 +3,15 @@ output "default_vpc_id" {
 }
 
 output "default_subnet_a_id" {
-  value = aws_default_subnet.default_subnet_a.id
+  value = length(aws_default_subnet.default_subnet_a) > 0 ? aws_default_subnet.default_subnet_a[0].id : ""
 }
 
 output "default_subnet_b_id" {
-  value = aws_default_subnet.default_subnet_b.id
+  value = length(aws_default_subnet.default_subnet_b) > 0 ? aws_default_subnet.default_subnet_b[0].id : ""
 }
 
 output "default_subnet_c_id" {
-  value = aws_default_subnet.default_subnet_c.id
+  value = length(aws_default_subnet.default_subnet_c) > 0 ? aws_default_subnet.default_subnet_c[0].id : ""
 }
 
 output "lambda_zone_sg_id" {

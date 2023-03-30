@@ -86,7 +86,7 @@ resource "aws_lambda_permission" "zone_alert" {
   action        = "lambda:InvokeFunction"
   function_name = module.lambda_ecowater_zone.lambda_function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${aws_apigatewayv2_api.zone_alert[0].id}/*/*/*"
+  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${local.zone_alert_api_id}/*/*/*"
 }
 
 
@@ -119,6 +119,6 @@ resource "aws_apigatewayv2_integration" "zone_alert" {
 }
 
 resource "aws_apigatewayv2_stage" "zone_alert_api_env" {
-  api_id = element(tolist(data.aws_apigatewayv2_apis.zone_alert.ids), 0)
+  api_id = local.zone_alert_api_id
   name   = local.environment
 }

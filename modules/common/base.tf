@@ -3,6 +3,8 @@ resource "aws_default_vpc" "default" {}
 
 
 resource "aws_default_subnet" "default_subnet_a" {
+  count = local.environment == "dev" ? 1 : 0
+
   availability_zone = "eu-west-3a"
   tags = {
     Type = "Public"
@@ -10,6 +12,8 @@ resource "aws_default_subnet" "default_subnet_a" {
 }
 
 resource "aws_default_subnet" "default_subnet_b" { #Manually removed the route to the Internet Gateway and added tag
+  count = local.environment == "dev" ? 1 : 0
+
   availability_zone = "eu-west-3b"
   tags = {
     Type = "Private"
@@ -17,6 +21,8 @@ resource "aws_default_subnet" "default_subnet_b" { #Manually removed the route t
 }
 
 resource "aws_default_subnet" "default_subnet_c" { #Manually removed the route to the Internet Gateway and added tag
+  count = local.environment == "dev" ? 1 : 0
+
   availability_zone = "eu-west-3c"
   tags = {
     Type = "Private"
@@ -28,11 +34,6 @@ data "aws_subnets" "private" {
     name   = "tag:Type"
     values = ["Private"]
   }
-
-  depends_on = [
-    aws_default_subnet.default_subnet_b,
-    aws_default_subnet.default_subnet_c
-  ]
 }
 
 #Private route table for the Ecowater DB instance's private subnet
@@ -42,7 +43,7 @@ resource "aws_route_table" "private-route" {
   vpc_id = aws_default_vpc.default.id
   route {
     cidr_block     = "0.0.0.0/0" #For the Lambda to be reachable by the API
-    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+    nat_gateway_id = aws_nat_gateway.nat_gateway[0].id
   }
   #Route to local will be automatically added by terraform
   tags = {
@@ -59,12 +60,15 @@ resource "aws_route_table_association" "private-route" {
 
 #Lambda network configuration
 resource "aws_eip" "ngw_eip" {
+  count = local.environment == "dev" ? 1 : 0
   vpc = true
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
-  allocation_id = aws_eip.ngw_eip.id
-  subnet_id     = aws_default_subnet.default_subnet_a.id #NAT must be in a public subnet
+  count = local.environment == "dev" ? 1 : 0
+
+  allocation_id = aws_eip.ngw_eip[0].id
+  subnet_id     = aws_default_subnet.default_subnet_a[0].id #NAT must be in a public subnet
 }
 
 resource "aws_security_group" "lambda_zone_sg" {
