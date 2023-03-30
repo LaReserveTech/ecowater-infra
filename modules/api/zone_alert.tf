@@ -119,6 +119,6 @@ resource "aws_apigatewayv2_integration" "zone_alert" {
 }
 
 resource "aws_apigatewayv2_stage" "zone_alert_api_env" {
-  api_id = aws_apigatewayv2_api.zone_alert[0].id
+  api_id = element(tolist(data.aws_apigatewayv2_apis.zone_alert.ids), 0)
   name   = local.environment
 }
