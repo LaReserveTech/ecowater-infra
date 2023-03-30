@@ -9,7 +9,7 @@ resource "random_uuid" "lambda_src_hash" {
 
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_dir      = "${local.lambda_src_path}/package"
+  source_dir       = "${local.lambda_src_path}/package"
   output_file_mode = "0755"
   output_path      = "${local.lambda_src_path}/${random_uuid.lambda_src_hash.result}.zip"
 
@@ -86,24 +86,30 @@ resource "aws_lambda_permission" "zone_alert" {
   action        = "lambda:InvokeFunction"
   function_name = module.lambda_ecowater_zone.lambda_function_name
   principal     = "apigateway.amazonaws.com"
-  #source_arn    = "${aws_apigatewayv2_api.zone_alert.arn}/*"  doesn't seem to work
+  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${aws_apigatewayv2_api.zone_alert[0].id}/*/*/*"
 }
 
 
 #API Gateway configuration
 resource "aws_apigatewayv2_api" "zone_alert" {
-  name          = "${local.name}_zone-${local.environment}"
+  count = local.environment == "dev" ? 1 : 0
+
+  name          = "${local.name}_api"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_route" "zone_alert" {
-  api_id    = aws_apigatewayv2_api.zone_alert.id
+  count = local.environment == "dev" ? 1 : 0
+
+  api_id    = aws_apigatewayv2_api.zone_alert[0].id
   route_key = "GET /zone"
-  target    = "integrations/${aws_apigatewayv2_integration.zone_alert.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.zone_alert[0].id}"
 }
 
 resource "aws_apigatewayv2_integration" "zone_alert" {
-  api_id                 = aws_apigatewayv2_api.zone_alert.id
+  count = local.environment == "dev" ? 1 : 0
+
+  api_id                 = aws_apigatewayv2_api.zone_alert[0].id
   integration_type       = "AWS_PROXY"
   connection_type        = "INTERNET"
   description            = "Lambda integration for zone alert"
@@ -113,6 +119,6 @@ resource "aws_apigatewayv2_integration" "zone_alert" {
 }
 
 resource "aws_apigatewayv2_stage" "zone_alert_api_env" {
-  api_id = aws_apigatewayv2_api.zone_alert.id
+  api_id = aws_apigatewayv2_api.zone_alert[0].id
   name   = local.environment
 }
