@@ -63,7 +63,7 @@ resource "aws_route_table_association" "private-route-c" {
 #Lambda network configuration
 resource "aws_eip" "ngw_eip" {
   count = local.environment == "dev" ? 1 : 0
-  vpc = true
+  vpc   = true
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
