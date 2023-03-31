@@ -18,12 +18,6 @@ data "archive_file" "lambda_zip" {
   ]
 }
 
-data "aws_subnets" "private" {
-  tags = {
-    Type = "Private"
-  }
-}
-
 module "lambda_ecowater_zone" {
   source = "git::https://github.com/terraform-aws-modules/terraform-aws-lambda.git?ref=v3.2.0"
 
@@ -36,10 +30,10 @@ module "lambda_ecowater_zone" {
   policy                 = aws_iam_policy.lambda_ecowater_zone.arn
   attach_network_policy  = true
   attach_tracing_policy  = true
-  vpc_subnet_ids         = [sort(data.aws_subnets.private.ids)[1]] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
+  vpc_subnet_ids         = [var.default_subnet_c_id] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
   vpc_security_group_ids = [var.lambda_zone_sg_id]
-  memory_size            = 512
-  timeout                = 60
+  memory_size            = 200
+  timeout                = 30
   create_package         = false
   create_function        = true
   local_existing_package = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"

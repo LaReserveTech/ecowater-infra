@@ -13,6 +13,12 @@ resource "aws_default_subnet" "default_subnet_a" {
   }
 }
 
+data "aws_subnets" "public" {
+  tags = {
+    Type = "Public"
+  }
+}
+
 resource "aws_default_subnet" "default_subnet_b" { #Manually removed the route to the Internet Gateway and added tag
   count = local.environment == "dev" ? 1 : 0
 
@@ -26,6 +32,12 @@ resource "aws_default_subnet" "default_subnet_c" { #Manually removed the route t
   count = local.environment == "dev" ? 1 : 0
 
   availability_zone = "eu-west-3c"
+  tags = {
+    Type = "Private"
+  }
+}
+
+data "aws_subnets" "private" {
   tags = {
     Type = "Private"
   }
