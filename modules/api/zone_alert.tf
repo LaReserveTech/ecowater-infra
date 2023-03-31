@@ -11,7 +11,7 @@ data "archive_file" "lambda_zip" {
   type             = "zip"
   source_dir       = "${local.lambda_src_path}/package"
   output_file_mode = "0755"
-  output_path      = "${local.lambda_src_path}/${random_uuid.lambda_src_hash.result}.zip"
+  output_path      = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
 
   depends_on = [
     random_uuid.lambda_src_hash
@@ -36,7 +36,7 @@ module "lambda_ecowater_zone" {
   timeout                = 60
   create_package         = false
   create_function        = true
-  local_existing_package = "${local.lambda_src_path}/${random_uuid.lambda_src_hash.result}.zip"
+  local_existing_package = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
   publish                = true
   environment_variables = {
     environment = local.environment

@@ -51,11 +51,17 @@ resource "aws_route_table" "private-route" {
   }
 }
 
-resource "aws_route_table_association" "private-route" {
-  for_each = toset(data.aws_subnets.private.ids)
+data "aws_route_table" "private-route" {
+  tags = {
+    Name = "private-route"
+  }
+}
 
-  subnet_id      = each.value
-  route_table_id = aws_route_table.private-route[0].id
+resource "aws_route_table_association" "private-route" {
+  for_each = { for ids in data.aws_subnets.private.ids : ids => "exists" if ids != null }
+
+  subnet_id      = each.key
+  route_table_id = data.aws_route_table.private-route.route_table_id
 }
 
 #Lambda network configuration
