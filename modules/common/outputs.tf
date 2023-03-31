@@ -1,5 +1,5 @@
 output "default_vpc_id" {
-  value = aws_default_vpc.default.id
+  value = length(aws_default_vpc.default[0].id) > 0 ? aws_default_vpc.default[0].id : ""
 }
 
 output "default_subnet_a_id" {

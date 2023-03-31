@@ -1,5 +1,7 @@
 #Manage the default VPC and default subnets via terraform
-resource "aws_default_vpc" "default" {}
+resource "aws_default_vpc" "default" {
+  count = local.environment == "dev" ? 1 : 0
+}
 
 
 resource "aws_default_subnet" "default_subnet_a" {
@@ -29,18 +31,11 @@ resource "aws_default_subnet" "default_subnet_c" { #Manually removed the route t
   }
 }
 
-data "aws_subnets" "private" {
-  filter {
-    name   = "tag:Type"
-    values = ["Private"]
-  }
-}
-
 #Private route table for the Ecowater DB instance's private subnet
 resource "aws_route_table" "private-route" {
   count = local.environment == "dev" ? 1 : 0
 
-  vpc_id = aws_default_vpc.default.id
+  vpc_id = aws_default_vpc.default[0].id
   route {
     cidr_block     = "0.0.0.0/0" #For the Lambda to be reachable by the API
     nat_gateway_id = aws_nat_gateway.nat_gateway[0].id
@@ -51,17 +46,18 @@ resource "aws_route_table" "private-route" {
   }
 }
 
-data "aws_route_table" "private-route" {
-  tags = {
-    Name = "private-route"
-  }
+resource "aws_route_table_association" "private-route-b" {
+  count = local.environment == "dev" ? 1 : 0
+
+  subnet_id      = aws_default_subnet.default_subnet_b[0].id
+  route_table_id = aws_route_table.private-route[0].id
 }
 
-resource "aws_route_table_association" "private-route" {
-  for_each = { for ids in data.aws_subnets.private.ids : ids => "exists" if ids != null }
+resource "aws_route_table_association" "private-route-c" {
+  count = local.environment == "dev" ? 1 : 0
 
-  subnet_id      = each.key
-  route_table_id = data.aws_route_table.private-route.route_table_id
+  subnet_id      = aws_default_subnet.default_subnet_c[0].id
+  route_table_id = aws_route_table.private-route[0].id
 }
 
 #Lambda network configuration
