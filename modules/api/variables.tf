@@ -17,7 +17,7 @@ variable "db_creds_kms" {
 variable "sub-domain" {
   type = map(string)
   default = {
-    dev = "api-dev.alerte-secheresse.fr"
-    pro = "api.alerte-secheresse.fr"
+    dev  = "api-dev.alerte-secheresse.fr"
+    prod = "api.alerte-secheresse.fr"
   }
 }

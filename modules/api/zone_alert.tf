@@ -86,28 +86,18 @@ resource "aws_lambda_permission" "zone_alert" {
   action        = "lambda:InvokeFunction"
   function_name = module.lambda_ecowater_zone.lambda_function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${local.zone_alert_api_id}/*/*/zone-${local.environment}"
+  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${aws_apigatewayv2_api.zone_alert.id}/*/*/zone-${local.environment}"
 }
 
 
 #API Gateway configuration
 resource "aws_apigatewayv2_api" "zone_alert" {
-  count = local.environment == "dev" ? 1 : 0
-
-  name          = "${local.name}_api"
+  name          = "${local.name}_api-${local.environment}"
   protocol_type = "HTTP"
-}
-
-data "aws_apigatewayv2_apis" "zone_alert" {
-  protocol_type = "HTTP"
-  tags = {
-    Project_tf_name = "ecowater"
-    Environment     = "dev"
-  }
 }
 
 resource "aws_apigatewayv2_integration" "zone_alert" {
-  api_id                 = local.zone_alert_api_id
+  api_id                 = aws_apigatewayv2_api.zone_alert.id
   integration_type       = "AWS_PROXY"
   connection_type        = "INTERNET"
   description            = "Lambda integration for zone alert in ${local.environment}"
@@ -117,13 +107,13 @@ resource "aws_apigatewayv2_integration" "zone_alert" {
 }
 
 resource "aws_apigatewayv2_route" "zone_alert" {
-  api_id    = local.zone_alert_api_id
-  route_key = "GET /zone-${local.environment}"
+  api_id    = aws_apigatewayv2_api.zone_alert.id
+  route_key = "GET /zone"
   target    = "integrations/${aws_apigatewayv2_integration.zone_alert.id}"
 }
 
 resource "aws_apigatewayv2_stage" "zone_alert_api_env" {
-  api_id      = local.zone_alert_api_id
+  api_id      = aws_apigatewayv2_api.zone_alert.id
   name        = local.environment
   auto_deploy = true
 }

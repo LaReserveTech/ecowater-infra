@@ -24,11 +24,6 @@ resource "aws_security_group" "database_sg" {
   }
 }
 
-resource "aws_db_subnet_group" "private" {
-  name       = "${local.name}-private-subnets-${local.environment}"
-  subnet_ids = var.private_subnets_ids
-}
-
 resource "aws_db_instance" "ecowater" {
   identifier              = "${local.name}-${local.environment}"
   allocated_storage       = local.allocated_storage
@@ -42,9 +37,9 @@ resource "aws_db_instance" "ecowater" {
   auto_minor_version_upgrade  = false
   allow_major_version_upgrade = false
 
-  db_name              = local.name
-  username             = var.database_username
-  password             = var.database_password
+  db_name  = local.name
+  username = var.database_username
+  password = var.database_password
 
   skip_final_snapshot = true
   maintenance_window  = "Sat:02:00-Sat:05:00"
@@ -52,6 +47,7 @@ resource "aws_db_instance" "ecowater" {
   apply_immediately = true
 
   publicly_accessible    = false
+  availability_zone      = "eu-west-3c"
   vpc_security_group_ids = [aws_security_group.database_sg.id]
 }
 
@@ -59,8 +55,6 @@ resource "aws_db_instance" "read-replica1-ecowater" {
   count = local.environment == "prod" ? 1 : 0
 
   identifier              = "read-replica1-${local.name}-${local.environment}"
-  allocated_storage       = local.allocated_storage
-  max_allocated_storage   = local.max_allocated_storage
   storage_encrypted       = true
   backup_retention_period = 7
 
@@ -69,8 +63,7 @@ resource "aws_db_instance" "read-replica1-ecowater" {
   auto_minor_version_upgrade  = false
   allow_major_version_upgrade = false
 
-  db_subnet_group_name = aws_db_subnet_group.private.name
-  replicate_source_db  = aws_db_instance.ecowater.identifier
+  replicate_source_db = aws_db_instance.ecowater.identifier
 
   skip_final_snapshot = true
   maintenance_window  = "Sat:02:00-Sat:05:00"

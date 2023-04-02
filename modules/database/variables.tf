@@ -16,16 +16,6 @@ variable "database_password" {
   sensitive = true
 }
 
-#variable "read_replica1_username" {
-#  type      = string
-#  sensitive = true
-#}
-#
-#variable "read_replica1_password" {
-#  type      = string
-#  sensitive = true
-#}
-
 variable "database_port" {
   type    = number
   default = 5432
