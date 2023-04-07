@@ -26,7 +26,8 @@ resource "aws_security_group" "database_sg" {
 
 resource "aws_db_instance" "ecowater" {
   identifier              = "${local.name}-${local.environment}"
-  allocated_storage       = local.allocated_storage
+  storage_encrypted       = true
+  allocated_storage       = local.allocated_storage[terraform.workspace]
   max_allocated_storage   = local.max_allocated_storage
   backup_retention_period = 7
 
@@ -36,6 +37,7 @@ resource "aws_db_instance" "ecowater" {
   port                        = var.database_port
   auto_minor_version_upgrade  = false
   allow_major_version_upgrade = false
+
 
   db_name  = local.name
   username = var.database_username
@@ -71,6 +73,7 @@ resource "aws_db_instance" "read-replica1-ecowater" {
   apply_immediately = true
 
   publicly_accessible    = false
+  availability_zone      = "eu-west-3c"
   vpc_security_group_ids = [aws_security_group.database_sg.id]
 }
 

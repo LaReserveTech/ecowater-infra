@@ -21,3 +21,11 @@ variable "sub-domain" {
     prod = "api.alerte-secheresse.fr"
   }
 }
+
+variable "cf-sub-domain" {
+  type = map(string)
+  default = {
+    dev  = "alerte-secheresse-dev.eu.org"
+    prod = "alerte-secheresse.eu.org"
+  }
+}

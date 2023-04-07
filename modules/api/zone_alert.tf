@@ -1,5 +1,14 @@
-#Lambda function for API integration with DB
+#Lambda Layer
+resource "aws_lambda_layer_version" "psycopg2_layer" {
+  filename   = "${local.lambda_src_path}/package/psycopg2.zip"
+  layer_name = "psycopg2"
 
+  compatible_runtimes = ["python3.9"]
+
+  source_code_hash = filebase64sha256("${local.lambda_src_path}/package/psycopg2.zip")
+}
+
+#Lambda function for API integration with DB
 resource "random_uuid" "lambda_src_hash" {
   keepers = {
     for filename in fileset(local.lambda_src_path, "*.py") :
@@ -9,7 +18,7 @@ resource "random_uuid" "lambda_src_hash" {
 
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_dir       = "${local.lambda_src_path}/package"
+  source_file      = "${local.lambda_src_path}/package/index.py"
   output_file_mode = "0755"
   output_path      = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
 
@@ -36,10 +45,16 @@ module "lambda_ecowater_zone" {
   timeout                = 30
   create_package         = false
   create_function        = true
+  layers = [
+    aws_lambda_layer_version.psycopg2_layer.arn,
+  ]
   local_existing_package = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
   publish                = true
   environment_variables = {
-    environment = local.environment
+    secret_name = "ecowater-dev"
+    region_name = "eu-west-3"
+    db          = "ecowater"
+    raw_path    = "/dev/which-zone"
   }
 }
 

@@ -1,36 +1,41 @@
 import os
 import boto3
+from botocore.exceptions import ClientError
 import json
 import psycopg2
 
-RAW_PATH = "/dev/which-zone"
-
 #Lambda environment variables
-ENVIRONMENT = os.environ['environment']
+SECRET_NAME = os.environ['secret_name']
+REGION_NAME = os.environ['region_name']
+DB = os.environ['db']
+RAW_PATH = os.environ['raw_path']
 
 #Get the DB credentials from Secrets Manager
 def getCredentials():
     credential = {}
-    
-    secret_name = "ecowater-dev"
-    region_name = "eu-west-3"
-    
+
     client = boto3.client(
-      service_name='secretsmanager',
-      region_name=region_name
+      service_name = 'secretsmanager',
+      region_name = REGION_NAME
     )
     
-    get_secret_value_response = client.get_secret_value(
-      SecretId=secret_name
-    )
+    try:
+        get_secret_value_response = client.get_secret_value(
+        SecretId=SECRET_NAME
+        )
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
     
     secret = json.loads(get_secret_value_response['SecretString'])
     username = list(secret.keys())[1]
+    host = list(secret.keys())[2]
     
     credential['username'] = username
     credential['password'] = secret[username]
-    credential['host'] = "ecowater-dev.c0t3flx8invj.eu-west-3.rds.amazonaws.com"
-    credential['db'] = "ecowaterdev"
+    credential['host'] = secret[host]
+    credential['db'] = DB
     
     return credential
 
