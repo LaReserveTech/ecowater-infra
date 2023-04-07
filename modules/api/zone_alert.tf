@@ -54,7 +54,7 @@ module "lambda_ecowater_zone" {
     secret_name = "ecowater-dev"
     region_name = "eu-west-3"
     db          = "ecowater"
-    raw_path    = "/dev/which-zone"
+    raw_path    = "/dev/zone"
   }
 }
 
@@ -101,7 +101,7 @@ resource "aws_lambda_permission" "zone_alert" {
   action        = "lambda:InvokeFunction"
   function_name = module.lambda_ecowater_zone.lambda_function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${aws_apigatewayv2_api.zone_alert.id}/*/*/zone-${local.environment}"
+  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${aws_apigatewayv2_api.zone_alert.id}/*/*/zone"
 }
 
 
