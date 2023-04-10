@@ -19,4 +19,5 @@ module "api" {
   lambda_zone_sg_id   = module.common.lambda_zone_sg_id
   db_creds            = module.database.db_creds
   db_creds_kms        = module.database.db_creds_kms
+  db_arn              = module.database.db_arn
 }

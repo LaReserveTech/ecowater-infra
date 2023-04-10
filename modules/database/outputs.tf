@@ -9,3 +9,7 @@ output "db_creds" {
 output "db_creds_kms" {
   value = aws_kms_key.ecowaterdb_creds.arn
 }
+
+output "db_arn" {
+  value = aws_db_instance.ecowater.arn
+}

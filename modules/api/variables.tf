@@ -29,3 +29,7 @@ variable "cf-sub-domain" {
     prod = "alerte-secheresse.eu.org"
   }
 }
+
+variable "db_arn" {
+  type = string
+}

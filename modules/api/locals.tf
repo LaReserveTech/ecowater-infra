@@ -8,4 +8,5 @@ locals {
   account_id      = data.aws_caller_identity.current.account_id
   region          = data.aws_region.current.id
   lambda_src_path = "${path.module}/lambda_code"
+  email_src_path = "${path.module}/email_alerting_code"
 }
