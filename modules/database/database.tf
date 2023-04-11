@@ -27,7 +27,7 @@ resource "aws_security_group" "database_sg" {
 resource "aws_db_instance" "ecowater" {
   identifier              = "${local.name}-${local.environment}"
   storage_encrypted       = true
-  allocated_storage       = local.allocated_storage[terraform.workspace]
+  allocated_storage       = local.allocated_storage[local.environment]
   max_allocated_storage   = local.max_allocated_storage
   backup_retention_period = 7
 

@@ -51,7 +51,7 @@ resource "aws_kms_alias" "ebs_key_alias" {
 
 resource "aws_instance" "bastion" {
   ami           = data.aws_ami.linux.id
-  instance_type = "t2.nano"
+  instance_type = var.ec2_instance_type[local.environment]
   tags = {
     Name = "ecowaterdb_bastion-${local.environment}"
   }

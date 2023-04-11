@@ -6,6 +6,14 @@ variable "private_subnets_ids" {
   type = list(any)
 }
 
+variable "ec2_instance_type" {
+  type = map(any)
+  default = {
+    dev  = "t2.nano"
+    prod = "t2.micro"
+  }
+}
+
 variable "database_username" {
   type      = string
   sensitive = true

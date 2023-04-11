@@ -1,5 +1,7 @@
-#Lambda Layer
+#Lambda Layers (will be deployed only once to be used for both environments)
 resource "aws_lambda_layer_version" "psycopg2_layer" {
+  count = local.environment == "dev" ? 1 : 0
+
   filename   = "${local.lambda_src_path}/package/psycopg2.zip"
   layer_name = "psycopg2"
 
@@ -8,10 +10,21 @@ resource "aws_lambda_layer_version" "psycopg2_layer" {
   source_code_hash = filebase64sha256("${local.lambda_src_path}/package/psycopg2.zip")
 }
 
+resource "aws_lambda_layer_version" "getCredentials_layer" {
+  count = local.environment == "dev" ? 1 : 0
+
+  filename   = "${local.lambda_src_path}/package/getCredentials_layer.zip"
+  layer_name = "getCredentials"
+
+  compatible_runtimes = ["python3.9"]
+
+  source_code_hash = filebase64sha256("${local.lambda_src_path}/package/getCredentials_layer.zip")
+}
+
 #Lambda function for API integration with DB
 resource "random_uuid" "lambda_src_hash" {
   keepers = {
-    for filename in fileset(local.lambda_src_path, "*.py") :
+    for filename in fileset(local.lambda_src_path, "index.py") :
     filename => filemd5("${local.lambda_src_path}/${filename}")
   }
 }
@@ -46,7 +59,8 @@ module "lambda_ecowater_zone" {
   create_package         = false
   create_function        = true
   layers = [
-    aws_lambda_layer_version.psycopg2_layer.arn,
+    aws_lambda_layer_version.psycopg2_layer[0].arn,
+    aws_lambda_layer_version.getCredentials_layer[0].arn,
   ]
   local_existing_package = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
   publish                = true
