@@ -56,6 +56,10 @@ jobs:
         shell: bash
 
     steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
       uses: hashicorp/terraform-github-actions/init@v0.8.0
@@ -95,6 +99,10 @@ jobs:
         shell: bash
 
     steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+      
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
       uses: hashicorp/terraform-github-actions/init@v0.8.0
