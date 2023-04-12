@@ -12,7 +12,6 @@ RAW_PATH = os.environ['raw_path']
 credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
       
 connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
-cursor = connection.cursor()
 print ("Successfully connected to DB")
 
 #Query the database
@@ -29,6 +28,7 @@ def lambda_handler(event, context):
       WHERE ST_Intersects('POINT({} {})'::geography::geometry, wkb_geometry);
       """.format(longitude,latitude)
       try:
+        cursor = connection.cursor()
         cursor.execute(query)
         results = cursor.fetchone()
         #print (results[0])
