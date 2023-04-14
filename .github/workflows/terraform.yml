@@ -62,7 +62,7 @@ jobs:
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
-      uses: hashicorp/terraform-github-actions/init@v0.8.0
+      uses: hashicorp/terraform-github-actions@v0.8.0
       with:
         tf_actions_version: 1.3.7
         tf_actions_subcommand: 'init'
@@ -71,7 +71,7 @@ jobs:
         TF_WORKSPACE: 'dev'
 
     - name: Terraform Validate
-      uses: hashicorp/terraform-github-actions/validate@v0.8.0
+      uses: hashicorp/terraform-github-actions@v0.8.0
       with:
         tf_actions_version: 1.3.7
         tf_actions_subcommand: 'validate'
@@ -102,10 +102,10 @@ jobs:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
       uses: actions/checkout@v3
-      
+
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
-      uses: hashicorp/terraform-github-actions/init@v0.8.0
+      uses: hashicorp/terraform-github-actions@v0.8.0
       with:
         tf_actions_version: 1.3.7
         tf_actions_subcommand: 'init'
@@ -114,7 +114,7 @@ jobs:
         TF_WORKSPACE: 'prod'
 
     - name: Terraform Validate
-      uses: hashicorp/terraform-github-actions/validate@v0.8.0
+      uses: hashicorp/terraform-github-actions@v0.8.0
       with:
         tf_actions_version: 1.3.7
         tf_actions_subcommand: 'validate'

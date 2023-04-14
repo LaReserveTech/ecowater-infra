@@ -24,10 +24,14 @@ def getCredentials(SECRET_NAME, REGION_NAME, DB):
     secret = json.loads(get_secret_value_response['SecretString'])
     username = list(secret.keys())[1]
     host = list(secret.keys())[2]
+    mailjet_api_key = list(secret.keys())[3]
+    mailjet_api_secret = list(secret.keys())[4]
     
     credential['username'] = username
     credential['password'] = secret[username]
     credential['host'] = secret[host]
     credential['db'] = DB
+    credential['mailjet_api_key'] = secret[mailjet_api_key]
+    credential['mailjet_api_secret'] = secret[mailjet_api_secret]
     
     return credential

@@ -54,8 +54,8 @@ module "lambda_ecowater_zone" {
   attach_tracing_policy  = true
   vpc_subnet_ids         = [var.default_subnet_c_id] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
   vpc_security_group_ids = [var.lambda_zone_sg_id]
-  memory_size            = 200
-  timeout                = 30
+  memory_size            = 128
+  timeout                = 10
   create_package         = false
   create_function        = true
   layers = [
@@ -65,10 +65,10 @@ module "lambda_ecowater_zone" {
   local_existing_package = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
   publish                = true
   environment_variables = {
-    secret_name = "ecowater-dev"
+    secret_name = "ecowater-${local.environment}"
     region_name = "eu-west-3"
-    db          = "ecowater"
-    raw_path    = "/dev/zone"
+    db          = local.name
+    raw_path    = "/${local.environment}/zone"
   }
 }
 

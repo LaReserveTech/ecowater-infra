@@ -31,15 +31,22 @@ module "lambda_email_subscription" {
   attach_tracing_policy  = true
   vpc_subnet_ids         = [var.default_subnet_c_id] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
   vpc_security_group_ids = [var.lambda_zone_sg_id]
-  memory_size            = 200
+  memory_size            = 128
   timeout                = 30
   create_package         = false
   create_function        = true
   layers = [
     aws_lambda_layer_version.psycopg2_layer[0].arn,
+    aws_lambda_layer_version.getCredentials_layer[0].arn,
   ]
   local_existing_package = "${local.email_sub_src_path}/${local.environment}/${random_uuid.email_sub_src_hash.result}.zip"
   publish                = true
+  environment_variables = {
+    secret_name = "ecowater-${local.environment}"
+    region_name = "eu-west-3"
+    db          = local.name
+    raw_path    = "/${local.environment}/subscription"
+  }
 }
 
 resource "aws_lambda_alias" "lambda_email_subscription" {

@@ -1,3 +1,15 @@
+#Lambda Layer (will be deployed only once to be used for both environments)
+resource "aws_lambda_layer_version" "mailjet_libs_layer" {
+  count = local.environment == "dev" ? 1 : 0
+
+  filename   = "${local.email_src_path}/package/libs_mailjet.zip"
+  layer_name = "libs_mailjet"
+
+  compatible_runtimes = ["python3.9"]
+
+  source_code_hash = filebase64sha256("${local.email_src_path}/package/libs_mailjet.zip")
+}
+
 #Lambda function for email alerting
 resource "random_uuid" "email_src_hash" {
   keepers = {
@@ -35,8 +47,18 @@ module "lambda_email_alerting" {
   timeout                = 30
   create_package         = false
   create_function        = true
+  layers = [
+    aws_lambda_layer_version.psycopg2_layer[0].arn,
+    aws_lambda_layer_version.getCredentials_layer[0].arn,
+    aws_lambda_layer_version.mailjet_libs_layer[0].arn,
+  ]
   local_existing_package = "${local.email_src_path}/${local.environment}/${random_uuid.email_src_hash.result}.zip"
   publish                = true
+  environment_variables = {
+    secret_name = "ecowater-${local.environment}"
+    region_name = "eu-west-3"
+    db          = local.name
+  }
 }
 
 resource "aws_lambda_alias" "lambda_email_alerting" {
