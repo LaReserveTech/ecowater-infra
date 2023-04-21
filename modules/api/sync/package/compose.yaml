@@ -1,0 +1,22 @@
+services:
+  app:
+    image: python
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - app_vendors:/usr/local/lib/python3.11/site-packages
+  pg:
+    image: postgis/postgis
+    environment:
+      POSTGRES_PASSWORD: ecowater
+      POSTGRES_USER: ecowater
+      POSTGRES_DB: ecowater
+    ports:
+      - 5432:5432
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  app_vendors: ~
+  pgdata: ~
