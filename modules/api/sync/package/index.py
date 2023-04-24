@@ -6,7 +6,6 @@ import decree_provider
 import decree_repository
 import restriction_provider
 import restriction_repository
-import zone_repository
 
 def lambda_handler(_event, _context):
     connection = psycopg2.connect(database="ecowater", user="ecowater", password="ecowater", host="pg", port="5432")
@@ -24,7 +23,6 @@ def lambda_handler(_event, _context):
         end_date_month, end_date_day, end_date_year = row['Date_Fin'].split('/')
         end_date = datetime.date(int(end_date_year), int(end_date_month), int(end_date_day))
         decree_repository.save(cursor, row['Id'], row['CodeZA'], row['Niveau_Alerte'].lower(), start_date, end_date)
-        zone_repository.update_alert_level(cursor, row['CodeZA'], row['Niveau_Alerte'].lower())
 
     del decrees_content
     del decrees_rows
