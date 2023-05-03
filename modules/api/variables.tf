@@ -30,6 +30,14 @@ variable "cf-sub-domain" {
   }
 }
 
+variable "cf-fr-sub-domain" {
+  type = map(string)
+  default = {
+    dev  = "alerte-secheresse-dev.fr.eu.org"
+    prod = "alerte-secheresse.fr.eu.org"
+  }
+}
+
 variable "db_arn" {
   type = string
 }
