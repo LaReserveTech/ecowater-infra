@@ -7,36 +7,36 @@ resource "random_uuid" "data_synchro_src_hash" {
 }
 
 data "template_file" "synchro_code" {
-  count = "${length(local.data_synchro_src_files)}"
+  count = length(local.data_synchro_src_files)
 
-  template = "${file(element(local.data_synchro_src_files, count.index))}"
+  template = file(element(local.data_synchro_src_files, count.index))
 }
 
 data "archive_file" "data_synchro_zip" {
-  type             = "zip"
+  type = "zip"
   source {
-    filename = "${basename(local.data_synchro_src_files[0])}"
-    content  = "${data.template_file.t_file.0.rendered}"
+    filename = basename(local.data_synchro_src_files[0])
+    content  = data.template_file.t_file.0.rendered
   }
 
   source {
-    filename = "${basename(local.data_synchro_src_files[1])}"
-    content  = "${data.template_file.t_file.1.rendered}"
+    filename = basename(local.data_synchro_src_files[1])
+    content  = data.template_file.t_file.1.rendered
   }
 
   source {
-    filename = "${basename(local.data_synchro_src_files[2])}"
-    content  = "${data.template_file.t_file.0.rendered}"
+    filename = basename(local.data_synchro_src_files[2])
+    content  = data.template_file.t_file.0.rendered
   }
 
   source {
-    filename = "${basename(local.data_synchro_src_files[3])}"
-    content  = "${data.template_file.t_file.1.rendered}"
+    filename = basename(local.data_synchro_src_files[3])
+    content  = data.template_file.t_file.1.rendered
   }
 
   source {
-    filename = "${basename(local.data_synchro_src_files[4])}"
-    content  = "${data.template_file.t_file.1.rendered}"
+    filename = basename(local.data_synchro_src_files[4])
+    content  = data.template_file.t_file.1.rendered
   }
   output_file_mode = "0755"
   output_path      = "${local.data_synchro_src_path}/${local.environment}/${random_uuid.data_synchro_src_hash.result}.zip"
