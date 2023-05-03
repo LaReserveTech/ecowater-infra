@@ -1,22 +1,22 @@
 #SUBDOMAIN DELEGATION FOR API
-resource "aws_route53_zone" "api-ecowater" {
-  name = var.sub-domain[terraform.workspace]
-}
-
-resource "aws_route53_record" "api-ecowater" {
-  allow_overwrite = true
-  name            = var.sub-domain[terraform.workspace]
-  ttl             = 172800
-  type            = "NS"
-  zone_id         = aws_route53_zone.api-ecowater.zone_id
-
-  records = [
-    aws_route53_zone.api-ecowater.name_servers[0],
-    aws_route53_zone.api-ecowater.name_servers[1],
-    aws_route53_zone.api-ecowater.name_servers[2],
-    aws_route53_zone.api-ecowater.name_servers[3],
-  ]
-}
+#resource "aws_route53_zone" "api-ecowater" {
+#  name = var.sub-domain[terraform.workspace]
+#}
+#
+#resource "aws_route53_record" "api-ecowater" {
+#  allow_overwrite = true
+#  name            = var.sub-domain[terraform.workspace]
+#  ttl             = 172800
+#  type            = "NS"
+#  zone_id         = aws_route53_zone.api-ecowater.zone_id
+#
+#  records = [
+#    aws_route53_zone.api-ecowater.name_servers[0],
+#    aws_route53_zone.api-ecowater.name_servers[1],
+#    aws_route53_zone.api-ecowater.name_servers[2],
+#    aws_route53_zone.api-ecowater.name_servers[3],
+#  ]
+#}
 
 #SUBDOMAIN DELEGATION FOR API (cloudflare)
 resource "aws_route53_zone" "cf-ecowater" {
@@ -35,6 +35,26 @@ resource "aws_route53_record" "cf-ecowater" {
     aws_route53_zone.cf-ecowater.name_servers[1],
     aws_route53_zone.cf-ecowater.name_servers[2],
     aws_route53_zone.cf-ecowater.name_servers[3],
+  ]
+}
+
+#SUBDOMAIN DELEGATION FOR API in fr.eu.org (cloudflare)
+resource "aws_route53_zone" "cf-fr-ecowater" {
+  name = var.cf-fr-sub-domain[terraform.workspace]
+}
+
+resource "aws_route53_record" "cf-fr-ecowater" {
+  allow_overwrite = true
+  name            = var.cf-fr-sub-domain[terraform.workspace]
+  ttl             = 172800
+  type            = "NS"
+  zone_id         = aws_route53_zone.cf-fr-ecowater.zone_id
+
+  records = [
+    aws_route53_zone.cf-fr-ecowater.name_servers[0],
+    aws_route53_zone.cf-fr-ecowater.name_servers[1],
+    aws_route53_zone.cf-fr-ecowater.name_servers[2],
+    aws_route53_zone.cf-fr-ecowater.name_servers[3],
   ]
 }
 
