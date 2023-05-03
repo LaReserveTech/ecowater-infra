@@ -1,8 +1,8 @@
 #Lambda function for DB data synchronisation
 resource "random_uuid" "data_synchro_src_hash" {
   keepers = {
-    for filename in fileset("${local.data_synchro_src_path}", "*.py") :
-    filename => filemd5("${local.data_synchro_src_path}/${filename}")
+    for filename in fileset("${local.data_synchro_src_path}/package/", "*.py") :
+    filename => filemd5("${local.data_synchro_src_path}/package/${filename}")
   }
 }
 
@@ -102,4 +102,15 @@ resource "aws_cloudwatch_event_rule" "lambda_scheduling" {
   schedule_expression = "cron(0 0 * * ? *)"
 
   is_enabled = local.enable_cron[local.environment]
+}
+
+resource "aws_cloudwatch_event_target" "lambda_scheduling" {
+  rule      = aws_cloudwatch_event_rule.lambda_scheduling.name
+  target_id = "${local.name}-data_synchro-${local.environment}"
+  arn       = module.lambda_data_synchro.lambda_function_arn
+
+  depends_on = [
+    aws_cloudwatch_event_rule.lambda_scheduling,
+    module.lambda_data_synchro
+  ]
 }

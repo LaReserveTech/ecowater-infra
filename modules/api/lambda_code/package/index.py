@@ -31,12 +31,28 @@ def lambda_handler(event, context):
         cursor = connection.cursor()
         cursor.execute(query)
         results = cursor.fetchone()
-        #print (results[0])
         
         cursor.close()
         connection.commit()
 
+        print ("Writing to file")
+
+        results_json = {
+           "niveau-alerte":"niveau"
+           }
+        
+        results_json["niveau-alerte"] = results[1]
+        #results_dict = results.pop(0)
+        #del results[0:2]
+        results_json.update(results_dict)
+
+        # Create a json file with the results from the DB query
+        json_file = open("restrictions.json", "w")
+        json.dump(results_json, json_file, indent = 6)
+        json_file.close()
+
         print ("Sending results")
+        
         return results
       
       except Exception as exeption:
