@@ -3,7 +3,7 @@ services:
     image: python
     working_dir: /app
     volumes:
-      - ./:/app
+      - ./package:/app
       - app_vendors:/usr/local/lib/python3.11/site-packages
   pg:
     image: postgis/postgis
@@ -14,7 +14,8 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./zonesalerte.sql:/docker-entrypoint-initdb.d/1-zonesalerte.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/2-init.sql
       - pgdata:/var/lib/postgresql/data
 
 volumes:
