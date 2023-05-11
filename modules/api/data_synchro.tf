@@ -31,7 +31,8 @@ module "lambda_data_synchro" {
   attach_tracing_policy  = true
   vpc_subnet_ids         = [var.default_subnet_c_id] #linked to just one private subnet (the same as the DB), keeping the other as a backup/for tests
   vpc_security_group_ids = [var.lambda_zone_sg_id]
-  memory_size            = 128
+  memory_size            = 600
+  ephemeral_storage_size = 1000
   timeout                = 30
   create_package         = false
   create_function        = true
