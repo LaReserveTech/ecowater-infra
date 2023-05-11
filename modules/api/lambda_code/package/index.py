@@ -44,12 +44,12 @@ def lambda_handler(event, context):
         results_json["niveau-alerte"] = results[1]
         #results_dict = results.pop(0)
         #del results[0:2]
-        results_json.update(results_dict)
+        #results_json.update(results_dict)
 
         # Create a json file with the results from the DB query
-        json_file = open("restrictions.json", "w")
-        json.dump(results_json, json_file, indent = 6)
-        json_file.close()
+        #json_file = open("restrictions.json", "w")
+        #json.dump(results_json, json_file, indent = 6)
+        #json_file.close()
 
         print ("Sending results")
         
