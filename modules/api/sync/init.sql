@@ -1,8 +1,18 @@
 DROP TABLE IF EXISTS alert_subscription;
 DROP TABLE IF EXISTS restriction;
 DROP TABLE IF EXISTS decree;
+DROP TABLE IF EXISTS geozone;
 
 ------
+
+CREATE TABLE public.geozone (
+    gid SERIAL PRIMARY KEY,
+    id character varying(32),
+    dpt character varying(3),
+    type character varying(3),
+    libel character varying(200),
+    geom public.geometry(MultiPolygon, 4326)
+);
 
 CREATE TABLE decree(
     id SERIAL PRIMARY KEY,

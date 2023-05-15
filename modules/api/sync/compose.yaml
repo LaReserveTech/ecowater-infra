@@ -14,9 +14,13 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./zonesalerte.sql:/docker-entrypoint-initdb.d/1-zonesalerte.sql
-      - ./init.sql:/docker-entrypoint-initdb.d/2-init.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - pgdata:/var/lib/postgresql/data
+  ogr2ogr:
+    image: osgeo/gdal
+    working_dir: /app
+    volumes:
+      - ./data:/app
 
 volumes:
   app_vendors: ~
