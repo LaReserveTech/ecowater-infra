@@ -5,19 +5,22 @@ DROP TABLE IF EXISTS geozone;
 
 ------
 
-CREATE TABLE public.geozone (
-    gid SERIAL PRIMARY KEY,
-    id character varying(32),
-    dpt character varying(3),
-    type character varying(3),
-    libel character varying(200),
-    geom public.geometry(MultiPolygon, 4326)
+CREATE TABLE geozone (
+    id SERIAL PRIMARY KEY,
+    id_zone INT,
+    code_zone VARCHAR(32),
+    type_zone VARCHAR(3),
+    nom_zone VARCHAR(200),
+    n_version INT,
+    code_dep VARCHAR(3),
+    nom_dep VARCHAR(60),
+    geom geometry(MultiPolygon, 4326)
 );
 
 CREATE TABLE decree(
     id SERIAL PRIMARY KEY,
-    external_id VARCHAR(25) NOT NULL UNIQUE,
-    geozone_id INT REFERENCES geozone (gid) NOT NULL,
+    external_id VARCHAR(32) NOT NULL UNIQUE,
+    geozone_id INT REFERENCES geozone (id) NOT NULL,
     alert_level VARCHAR(100) NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL
@@ -25,6 +28,7 @@ CREATE TABLE decree(
 
 CREATE TABLE restriction (
     id SERIAL PRIMARY KEY,
+    external_id VARCHAR(64) NOT NULL UNIQUE,
     decree_id INT REFERENCES decree (id) NOT NULL,
     restriction_level VARCHAR(100) NOT NULL,
     user_individual BOOLEAN NOT NULL,
@@ -42,6 +46,6 @@ CREATE TABLE restriction (
 CREATE TABLE alert_subscription (
     id SERIAL PRIMARY KEY,
     email VARCHAR(254) UNIQUE NOT NULL,
-    geozone_id INT REFERENCES geozone (gid) NOT NULL,
+    geozone_id INT REFERENCES geozone (id) NOT NULL,
     subscribed_at date NOT NULL
 );
