@@ -1,49 +1,14 @@
+from typing import Optional
+from datetime import datetime
 import psycopg2
 import logging
-import datetime
 import csv
+import data_provider
 import geozone_repository
 import decree_provider
 import decree_repository
 import restriction_provider
 import restriction_repository
-import requests
-import json
-
-DATASET='643d5f985c230e2b786c5602'
-
-def getdata():
-
-# URL de l'API à appeler
-    url = 'https://demo.data.gouv.fr/api/1/datasets/' + DATASET
-
-    # Faire une requête GET pour récupérer le fichier
-    response = requests.get(url)
-
-    # Vérifier si la requête a réussi
-    if response.status_code == 200:
-        #print (response.content)
-        data = json.loads(response.text)
-        print( len(data['resources']))
-        nbfile = len(data['resources'])
-        for x in range(nbfile):
-            print( data['resources'][x]['url'])
-            file=data['resources'][x]['url']
-            response = requests.get(file)
-            if response.status_code == 200:
-        # Enregistrer le fichier sur le disque dur
-                with open(data['resources'][x]['title'], 'wb') as f:
-                    f.write(response.content)
-                print('Le fichier a été téléchargé avec succès.')
-            else:
-        # Afficher un message d'erreur si la requête a échoué
-                print('La requête a échoué avec le code d\'erreur', response.status_code)
-    else:
-        # Afficher un message d'erreur si la requête a échoué
-        print('La requête a échoué avec le code d\'erreur', response.status_code)
-    return None
-
-
 
 def lambda_handler(_event, _context):
     connection = psycopg2.connect(database="ecowater", user="ecowater", password="ecowater", host="pg", port="5432") # TODO use environment variables
@@ -51,67 +16,99 @@ def lambda_handler(_event, _context):
     cursor = connection.cursor()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.info('Connected to the database')
+    logging.debug('Connected to the database')
 
-    # Retrieve all files
-    getdata()
-
+    # data_provider.get_data()
     # todo replace the existing file reader by the file getted by the previous function
 
+    synchronize_decrees(cursor)
+    synchronize_restrictions(cursor)
 
-    # Decrees
+    cursor.close()
+    connection.close()
+
+def synchronize_decrees(cursor) -> None:
+    logging.info('Starting decrees synchronization')
     decrees_content = decree_provider.get()
     decrees_rows = csv.DictReader(decrees_content.splitlines(), delimiter=',')
 
     for row in decrees_rows:
         try:
-            geozone = geozone_repository.find_by_external_id(cursor, row['CodeZA'])
-            start_date_month, start_date_day, start_date_year = row['Date_Debut'].split('/')
-            start_date = datetime.date(int(start_date_year), int(start_date_month), int(start_date_day))
-            end_date_month, end_date_day, end_date_year = row['Date_Fin'].split('/')
-            end_date = datetime.date(int(end_date_year), int(end_date_month), int(end_date_day))
-            decree_repository.save(cursor, row['Id'], geozone[0], row['Niveau_Alerte'].lower(), start_date, end_date)
+            geozone = geozone_repository.find_by_external_id(cursor, row['id_zone'])
+
+            if geozone is None:
+                logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
+                continue
+
+            decree = {
+                'external_id': row.get('unique_key_arrete_zone_alerte'),
+                'geozone_id': geozone[0],
+                'start_date': datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d'),
+                'end_date': datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d'),
+                'alert_level': row.get('nom_niveau').lower(),
+            }
+            decree_repository.save(cursor, decree)
         except Exception as e:
-            logging.error('Failed to import decree: External ID: %s. Exception: %s', row.get('Id', 'None'), str(e))
+            logging.error('Failed to import decree: External ID: %s. Exception: %s', row.get('unique_key_arrete_zone_alerte', 'None'), str(e))
 
     del decrees_content
     del decrees_rows
+    logging.info('End of decrees synchronization')
 
-    # Restrictions
+def synchronize_restrictions(cursor) -> None:
+    logging.info('Starting restrictions synchronization')
     restrictions_content = restriction_provider.get()
     restrictions_rows = csv.DictReader(restrictions_content.splitlines(), delimiter=',')
 
-    restriction_repository.wipe(cursor) # TODO find a better way to handle upsert for restrictions
-
     for row in restrictions_rows:
         try:
-            decree = decree_repository.find_by_external_id(cursor, row['ArreteId'])
+            decree = decree_repository.find_by_external_id(cursor, row.get('unique_key_arrete_zone_alerte'))
 
             if decree is None:
-                logging.error('Failed to import restriction, decree not found. Decree ID: %s', row.get('ArreteId', 'None'))
+                logging.error('Failed to import restriction, decree not found. Decree External ID: %s', row.get('unique_key_arrete_zone_alerte', 'None'))
                 continue
 
-            try:
-                from_hour = int(row['Heure_Debut'])
-            except ValueError:
-                from_hour = None
+            restriction = {
+                'external_id': row.get('unique_key_arrete_zone_alerte') + row.get('unique_key_restriction_alerte'),
+                'decree_id': decree[0],
+                'restriction_level': row.get('nom_niveau_restriction'),
+                'user_individual': parse_restriction_user(row.get('concerne_particulier')),
+                'user_company': parse_restriction_user(row.get('concerne_entreprise')),
+                'user_community': parse_restriction_user(row.get('concerne_collectivite')),
+                'user_farming': parse_restriction_user(row.get('concerne_exploitation')),
+                'theme': row.get('nom_thematique'),
+                'label': row.get('nom_usage'),
+                'description': row.get('nom_usage_personnalise'),
+                'specification': row.get('niveau_alerte_restriction_texte'),
+                'from_hour': parse_restriction_time(row.get('heure_debut'), row.get('unique_key_restriction_alerte')),
+                'to_hour': parse_restriction_time(row.get('heure_fin'), row.get('unique_key_restriction_alerte')),
+            }
 
-            try:
-                to_hour = int(row['Heure_Fin'])
-            except ValueError:
-                to_hour = None
-
-            user_individual = True if row['Particulier'].lower() == "oui" else False
-            user_company = True if row['Entreprise'].lower() == "oui" else False
-            user_community = True if row['Collectivite'].lower() == "oui" else False
-            user_farming = True if row['Exploitation'].lower() == "oui" else False
-
-            restriction_repository.save(cursor, decree[0], row['Niveau'].lower(), user_individual, user_company, user_community, user_farming, row['Thematique'], row['Nom_Usage'], row['Nom_Usage_Personalise'], row['Precision'], from_hour, to_hour)
+            restriction_repository.save(cursor, restriction)
         except Exception as e:
             logging.error('Failed to import restriction. Exception: %s', str(e))
 
-    cursor.close()
-    connection.close()
+    del restrictions_content
+    del restrictions_rows
+    logging.info('End of restrictions synchronization')
+
+def parse_restriction_user(user) -> bool:
+    return True if user.lower() == "true" else False
+
+def parse_restriction_time(time: str, restriction_external_id: str) -> Optional[int]:
+    if time.lower() == 'null':
+        return None
+
+    try:
+        return int(time)
+    except Exception as e:
+        logging.warning(
+            'Failed to parse `from_hour` column. Restriction External ID: %s, From Hour Value: %s, Exception: %s',
+            'None' if restriction_external_id is None or restriction_external_id == "" else restriction_external_id,
+            'None' if time is None or time == "" else time,
+            str(e)
+        )
+        return None
 
 if __name__ == '__main__':
     lambda_handler(None, None)

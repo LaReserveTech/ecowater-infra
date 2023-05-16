@@ -10,7 +10,7 @@ RAW_PATH = os.environ['raw_path']
 
 #Connect to the database
 credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
-      
+
 connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
 print ("Successfully connected to DB")
 
@@ -28,14 +28,14 @@ def lambda_handler(event, context):
       try:
         cursor = connection.cursor()
         cursor.execute(query)
-        
+
         cursor.close()
         connection.commit()
 
         print ("Email successfully registered in the DB")
-      
+
       except Exception as exeption:
         print("Error: ", exeption)
-      
+
     else:
       return {"Error" : "Wrong API path"}
