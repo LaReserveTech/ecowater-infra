@@ -9,16 +9,30 @@ import decree_provider
 import decree_repository
 import restriction_provider
 import restriction_repository
+import os
+import getCredentials_layer as gc
+
+#Lambda environment variables
+SECRET_NAME = os.environ['secret_name']
+REGION_NAME = os.environ['region_name']
+DB = os.environ['db']
 
 def lambda_handler(_event, _context):
-    connection = psycopg2.connect(database="ecowater", user="ecowater", password="ecowater", host="pg", port="5432") # TODO use environment variables
+    #connection = psycopg2.connect(database="ecowater", user="ecowater", password="ecowater", host="pg", port="5432") # TODO use environment variables
+    #connection.autocommit = True
+    #cursor = connection.cursor()
+    
+    #Connect to the database
+    credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
+          
+    connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
     connection.autocommit = True
     cursor = connection.cursor()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.debug('Connected to the database')
 
-    # data_provider.get_data()
+    #data_provider.get_data()
     # todo replace the existing file reader by the file getted by the previous function
 
     synchronize_decrees(cursor)
