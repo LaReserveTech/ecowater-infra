@@ -51,7 +51,7 @@ def lambda_handler(event, context):
       else:
         logging.debug("Parameter validation : OK")
 
-      query = 'INSERT into alert_subscription (email, longitude, latitude, subscribed_at) VALUES (%s, %s, %s,  %s)'
+      query = 'INSERT into alert_subscription (email, longitude, latitude, subscribed_at) VALUES (%s, %s, %s,  %s);'
       parameters = (email, longitude, latitude, subscribtion_date)
 
       try:

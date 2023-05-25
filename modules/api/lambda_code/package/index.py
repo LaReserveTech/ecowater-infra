@@ -1,9 +1,10 @@
 import os
-import sys
 import base64
+import logging
+import json
 import getCredentials_layer as gc
 import psycopg2
-from psycopg2 import OperationalError, errorcodes, errors
+from psycopg2.extensions import AsIs
 
 #Lambda environment variables
 SECRET_NAME = os.environ['secret_name']
@@ -11,31 +12,14 @@ REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 RAW_PATH = os.environ['raw_path']
 
-#Error handling
-def print_psycopg2_exception(err):
-    # get details about the exception
-    err_type, err_obj, traceback = sys.exc_info()
-    
-    # get the line number when exception occured
-    line_num = traceback.tb_lineno
-    
-    # print the connect() error
-    print ("\npsycopg2 ERROR:", err, "on line number:", line_num)
-    print ("psycopg2 traceback:", traceback, "-- type:", err_type)
-
-    # psycopg2 extensions.Diagnostics object attribute
-    print ("\nextensions.Diagnostics:", err.diag)
-
-    # print the pgcode and pgerror exceptions
-    print ("pgerror:", err.pgerror)
-    print ("pgcode:", err.pgcode, "\n")
+#logging.getLogger().setLevel(logging.DEBUG)
 
 #Connect to the database
 credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
       
 connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
 connection.autocommit = True
-print ("Successfully connected to DB")
+logging.debug("Connected to the database")
 
 #Query the database
 def lambda_handler(event, context):
@@ -46,87 +30,96 @@ def lambda_handler(event, context):
       situation = event['queryStringParameters']['situation']
 
       query = """
-      SELECT de.id, de.alert_level, re.restriction_level, re.{user}, re.theme, re.label, re.description, re.specification, re.from_hour, re.to_hour                                        
+      SELECT de.alert_level, re.restriction_level, re.theme, re.label, re.description, re.specification, re.from_hour, re.to_hour                                        
       FROM geozone AS gz
       INNER JOIN decree AS de ON de.geozone_id = gz.id
       INNER JOIN restriction AS re ON re.decree_id = de.id
       WHERE ST_Contains(
           gz.geom,
           ST_SetSRID(
-                ST_MakePoint({lon}, {lat}),
+                ST_MakePoint(%s, %s),
                 4326
           )
-      );
-      """.format(user = situation,lon = longitude,lat = latitude)
+      )
+      AND re.%s IS TRUE;
+      """
+      params = (longitude, latitude, AsIs(situation))
+
       try:
         cursor = connection.cursor()
-        cursor.execute(query)
-        results = cursor.fetchall() #Get the query result in var
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        #if (results.len() <= 0):
+          #logging.error('No restriction found for User: %s, Longitude: %s, Latitude: %s', situation, longitude, latitude)
         print (connection.encoding)
+        
         cursor.close()
         connection.commit()
-
-        #Filter out the rows where the given situation is "false" (ex : user_individual = false)      
-        filtered_results = []
-        for item in results:
-          if not any(value is False for value in item):
-            filtered_results.append(item)
             
-        results_dict = {'niveau-alerte':'niveau'}
-        #Add all the restriction types into a list in order to decode them in utf-8
-        restriction_encoding = ["Réduction de prélèvement"] #TODO : find a way to query the rows with special characters
+        results_dict = {}
         
         #for restriction in restriction_level : 
           #base64.b64encode(restriction).decode('utf-8')
         
-        #Append the dictionary with reordered values in order to transform it in a json file
-        for item in filtered_results:
-          results_dict["niveau-alerte"] = item[1]
+        #Append the dictionary with reordered values in order to transform it in a json file // to change when the json model si updated
+        for item in results:
+          results_dict["niveau-alerte"] = item[0]
           
-          if item[2] == "Sensibilisation":
-            results_dict["sensibilisation"] = item[2] #to change when the json model is updated
+          if item[1] == "Sensibilisation":
+            results_dict["sensibilisation"] = item[1]
             continue
             
-          #elif item[2] == restriction_encoding[1]:
-            #results_dict["reduction-prelevement"] = item[2] #to change when the json model is updated
-            #continue
+          elif item[1] == "Réduction de prélèvement":
+            results_dict["reduction-prelevement"] = item[1]
+            continue
           
-          elif item[2] == "Interdiction sauf exception":
-            results_dict["interdiction-sauf-exception"] = item[2] #to change when the json model is updated
+          elif item[1] == "Interdiction sur plage horaire":
+            if item[2] == "Arrosage":
+              results_dict["arrosage-pelouses-massifs-fleuris"] = {
+                  "thematique": "arrosage",
+                  "heure-debut": item[6],
+                  "heure-fin": item[7]
+              }
+              continue
+            continue
+          
+          elif item[1] == "Interdiction sauf exception":
+            if item[2] == "Irrigation":
+              results_dict["irrigation-localisée-cultures"] = {
+                  "thematique": "irrigation",
+                  "en-savoir-plus": item[5]
+              }
+              continue
             continue
             
-          elif item[2] == "Interdiction sur plage horaire":
-            results_dict["interdiction-plage-horaire"] = item[2] #to change when the json model is updated
-            continue
-            
-          elif item[2] == "Interdiction":
-            if item[4] == "Arrosage":
+          elif item[1] == "Interdiction":
+            if item[2] == "Arrosage":
               results_dict["interdiction"] = {
                 "arrosage-jardins-potagers": {
                   "thematique": "arrosage",
                   "libelle-personnalise":"interdiction d'arroser les jardins potagers",
-                  "en-savoir-plus":"Interdiction d'arroser les jardins potagers."}
-              } #to change when the json model is updated
+                  "en-savoir-plus": item[5]}
+              }
               continue
             continue
             
           else:
             break
 
-        #print ("Writing to file")
+        logging.debug("Writing to file")
 
         # Create a json file with the results from the DB query
-        #json_file = open("restrictions.json", "w")
-        #json.dump(results_json, json_file, indent = 6)
-        #json_file.close()
+        with open ('/tmp/restrictions.json', mode='w', encoding='utf-8') as json_file:
+          json.dump(results_dict, json_file, indent = 4, ensure_ascii = False)
+          #json_file.close()
+          #test = json.load(json_file)
+        
+        logging.debug("Sending results")
 
-        print ("Sending results")
-
-        return results_dict # TODO : correct encoding of the responses (the special characters like "é" don't show well)
+        return json_file.read() # TODO : correct encoding of the responses (the special characters like "é" don't show well)
       
-      except OperationalError as err:
-        # pass exception to function
-        print_psycopg2_exception(err)
+      except Exception as e:
+        logging.error('Failed to fetch restrictions. User: %s, Longitude: %s, Latitude: %s, Exception: %s', situation, longitude, latitude, str(e))
       
     else:
       return {"Error" : "Wrong API path"}
