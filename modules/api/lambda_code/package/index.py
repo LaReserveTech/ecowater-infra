@@ -1,7 +1,5 @@
 import os
-import base64
 import logging
-import json
 import getCredentials_layer as gc
 import psycopg2
 from psycopg2.extensions import AsIs
@@ -44,13 +42,11 @@ def lambda_handler(event, context):
       AND re.%s IS TRUE;
       """
       params = (longitude, latitude, AsIs(situation))
-
+       
       try:
         cursor = connection.cursor()
         cursor.execute(query, params)
         results = cursor.fetchall()
-        #if (results.len() <= 0):
-          #logging.error('No restriction found for User: %s, Longitude: %s, Latitude: %s', situation, longitude, latitude)
         print (connection.encoding)
         
         cursor.close()
@@ -64,60 +60,41 @@ def lambda_handler(event, context):
         #Append the dictionary with reordered values in order to transform it in a json file // to change when the json model si updated
         for item in results:
           results_dict["niveau-alerte"] = item[0]
-          
+
           if item[1] == "Sensibilisation":
             results_dict["sensibilisation"] = item[1]
-            continue
-            
+
           elif item[1] == "Réduction de prélèvement":
             results_dict["reduction-prelevement"] = item[1]
-            continue
-          
+
           elif item[1] == "Interdiction sur plage horaire":
             if item[2] == "Arrosage":
               results_dict["arrosage-pelouses-massifs-fleuris"] = {
-                  "thematique": "arrosage",
-                  "heure-debut": item[6],
-                  "heure-fin": item[7]
+                "thematique": "arrosage",
+                "heure-debut": item[6],
+                "heure-fin": item[7],
               }
-              continue
-            continue
-          
+
           elif item[1] == "Interdiction sauf exception":
             if item[2] == "Irrigation":
               results_dict["irrigation-localisée-cultures"] = {
-                  "thematique": "irrigation",
-                  "en-savoir-plus": item[5]
+                "thematique": "irrigation",
+                "en-savoir-plus": item[5],
               }
-              continue
-            continue
-            
+
           elif item[1] == "Interdiction":
             if item[2] == "Arrosage":
               results_dict["interdiction"] = {
                 "arrosage-jardins-potagers": {
                   "thematique": "arrosage",
-                  "libelle-personnalise":"interdiction d'arroser les jardins potagers",
-                  "en-savoir-plus": item[5]}
+                  "libelle-personnalise": "interdiction d'arroser les jardins potagers",
+                  "en-savoir-plus": item[5],
+                }
               }
-              continue
-            continue
-            
-          else:
-            break
 
-        logging.debug("Writing to file")
-
-        # Create a json file with the results from the DB query
-        with open ('/tmp/restrictions.json', mode='w', encoding='utf-8') as json_file:
-          json.dump(results_dict, json_file, indent = 4, ensure_ascii = False)
-          #json_file.close()
-          #test = json.load(json_file)
-        
         logging.debug("Sending results")
-
-        return json_file.read() # TODO : correct encoding of the responses (the special characters like "é" don't show well)
-      
+        return results_dict
+        
       except Exception as e:
         logging.error('Failed to fetch restrictions. User: %s, Longitude: %s, Latitude: %s, Exception: %s', situation, longitude, latitude, str(e))
       
