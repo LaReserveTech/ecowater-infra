@@ -1,30 +1,14 @@
-# import the mailjet wrapper
 import mailjet_rest
-import getCredentials_layer as gc
+from common import db_connection
 from mailjet_rest import Client
 import os
-import psycopg2
 
-#export MJ_APIKEY_PUBLsIC='your api key'
-#export MJ_APIKEY_PRIVATE='your api secret'
-
-# Get your environment Mailjet keys
-#API_KEY = os.environ['MJ_APIKEY_PUBLIC']
-#API_SECRET = os.environ['MJ_APIKEY_PRIVATE']
-
-#Lambda environment variables
+# lambda environment variables
 SECRET_NAME = os.environ['secret_name']
 REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 
-
-#mailjet = Client(auth=(API_KEY, API_SECRET))
-
-#Connect to the database and also get the API keys for mailjet
-credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
-      
-connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
-print ("Successfully connected to DB")
+credential = db_connection.get_credentials(SECRET_NAME, REGION_NAME, DB)
 
 
 def lambda_handler(event, context):
@@ -59,6 +43,3 @@ def lambda_handler(event, context):
     print (result.json())
 
     return None
-
-
-#send_email( "","maximale")
