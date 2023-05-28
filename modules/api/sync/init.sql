@@ -47,6 +47,6 @@ CREATE TABLE alert_subscription (
     id SERIAL PRIMARY KEY,
     email VARCHAR(254) UNIQUE NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    latitude DOUBLE PRECISION NOT NULL
+    latitude DOUBLE PRECISION NOT NULL,
     subscribed_at date NOT NULL
 );
