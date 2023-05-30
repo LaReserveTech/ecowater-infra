@@ -40,7 +40,9 @@ def lambda_handler(event, context):
                 4326
           )
       )
-      AND re.%s IS TRUE;
+      AND re.%s IS TRUE
+      AND de.start_date <= DATE(NOW())
+      AND DATE(NOW()) <= de.end_date;
       """
       params = (longitude, latitude, AsIs(situation))
        
