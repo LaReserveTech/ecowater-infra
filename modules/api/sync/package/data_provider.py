@@ -1,5 +1,6 @@
 import requests
 import json
+import os
 
 DATASET='643d5f985c230e2b786c5602'
 
@@ -22,7 +23,9 @@ def get_data():
             response = requests.get(file)
             if response.status_code == 200:
         # Enregistrer le fichier sur le disque dur
-                with open(data['resources'][x]['title'], 'wb') as f:
+                save_path = '/tmp/'
+                completeName = os.path.join(save_path, data['resources'][x]['title'])
+                with open(completeName, 'wb') as f:
                     f.write(response.content)
                 print('Le fichier a été téléchargé avec succès.')
             else:

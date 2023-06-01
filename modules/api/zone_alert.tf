@@ -2,36 +2,36 @@
 resource "aws_lambda_layer_version" "psycopg2_layer" {
   count = local.environment == "dev" ? 1 : 0
 
-  filename   = "${local.lambda_src_path}/package/psycopg2.zip"
+  filename   = "${local.lambda_src_path}/psycopg2.zip"
   layer_name = "psycopg2"
 
   compatible_runtimes = ["python3.9"]
 
-  source_code_hash = filebase64sha256("${local.lambda_src_path}/package/psycopg2.zip")
+  source_code_hash = filebase64sha256("${local.lambda_src_path}/psycopg2.zip")
 }
 
 resource "aws_lambda_layer_version" "getCredentials_layer" {
   count = local.environment == "dev" ? 1 : 0
 
-  filename   = "${local.lambda_src_path}/package/getCredentials_layer.zip"
+  filename   = "${local.lambda_src_path}/getCredentials_layer.zip"
   layer_name = "getCredentials"
 
   compatible_runtimes = ["python3.9"]
 
-  source_code_hash = filebase64sha256("${local.lambda_src_path}/package/getCredentials_layer.zip")
+  source_code_hash = filebase64sha256("${local.lambda_src_path}/getCredentials_layer.zip")
 }
 
 #Lambda function for API integration with DB
 resource "random_uuid" "lambda_src_hash" {
   keepers = {
-    for filename in fileset(local.lambda_src_path, "index.py") :
-    filename => filemd5("${local.lambda_src_path}/${filename}")
+    for filename in fileset("${local.lambda_src_path}/package/", "*.py") :
+    filename => filemd5("${local.lambda_src_path}/package/${filename}")
   }
 }
 
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_file      = "${local.lambda_src_path}/package/index.py"
+  source_dir      = "${local.lambda_src_path}/package/"
   output_file_mode = "0755"
   output_path      = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
 
