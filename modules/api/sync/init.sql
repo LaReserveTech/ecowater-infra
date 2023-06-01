@@ -46,6 +46,7 @@ CREATE TABLE restriction (
 CREATE TABLE alert_subscription (
     id SERIAL PRIMARY KEY,
     email VARCHAR(254) UNIQUE NOT NULL,
-    geozone_id INT REFERENCES geozone (id) NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
     subscribed_at date NOT NULL
 );
