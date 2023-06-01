@@ -2,7 +2,7 @@
 resource "aws_lambda_layer_version" "email_validator_layer" {
   count = local.environment == "dev" ? 1 : 0
 
-  filename   = "${local.email_src_path}/package/email_validator.zip"
+  filename   = "${local.email_sub_src_path}/package/email_validator.zip"
   layer_name = "email_validator"
 
   compatible_runtimes = ["python3.9"]
