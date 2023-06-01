@@ -41,7 +41,7 @@ logging.debug("Connected to the database")
 def lambda_handler(event, context):
     if event['rawPath'] == RAW_PATH:
       
-      #Validate content-type
+      #1/Validate content-type
       headers = event['headers']
       
       if headers.get('content-type') is None or headers.get('content-type') != "application/json":
@@ -51,18 +51,22 @@ def lambda_handler(event, context):
             "body": "Content-type should be 'application/json'"
         }
       
-      #Validate parameters
+      #2/Validate parameters
       parameters = event['queryStringParameters']
+      
       if parameters.get('longitude') is not None and parameters.get('latitude') is not None and parameters.get('email') is not None:
-        logging.debug("The parameters are valid") #placeholder until long/lat format is checked
-        #if : #TODO Check long/lat format
-        #  logging.debug("The parameters are valid")
-        #else:
-        #  logging.error("Long and/or lat is not in decimal degrees (DD)")
-        #  return {
-        #      "statusCode": "422",
-        #      "body": "Longitude and/or latitude is not of the correct format. Must be decimal degrees (DD)"
-        #  }
+        try:
+          if isinstance (float(parameters['longitude']), float) and isinstance (float(parameters['latitude']), float): #TODO Check long/lat format
+            logging.debug("The parameters are valid")
+            
+          else:
+            logging.error("Long and/or lat is not in decimal degrees (DD)")
+            return {
+                "statusCode": "422",
+                "body": "Longitude and/or latitude is not of the correct format. Must be decimal degrees (DD)"
+            }
+        except Exception as exeption_params:
+          logging.error("Parameters not validated. Exception: %s", str(exeption_params))
           
       else:
         logging.error("A parameter is missing")
@@ -76,7 +80,7 @@ def lambda_handler(event, context):
       latitude = parameters['latitude']
       email = parameters['email']
       
-      #Validate email
+      #3/Validate email & insert it into the DB
       if validate_emails(email):
         query = 'INSERT into alert_subscription (email, longitude, latitude, subscribed_at) VALUES (%s, %s, %s,  %s);'
         parameters = (email, longitude, latitude, subscribtion_date)
