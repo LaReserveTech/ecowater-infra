@@ -52,4 +52,4 @@ terraform.rc
 *.DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/dotenv
 
-*__pycache__*
+**/__pycache__

@@ -23,7 +23,8 @@ CREATE TABLE decree(
     geozone_id INT REFERENCES geozone (id) NOT NULL,
     alert_level VARCHAR(100) NOT NULL,
     start_date date NOT NULL,
-    end_date date NOT NULL
+    end_date date NOT NULL,
+    document TEXT NOT NULL
 );
 
 CREATE TABLE restriction (
