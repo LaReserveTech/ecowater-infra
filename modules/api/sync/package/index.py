@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
-from common import connect_to_local_db, db_connection
+import db_connection
+from common import connect_to_local_db
 import logging
 import requests
 import csv

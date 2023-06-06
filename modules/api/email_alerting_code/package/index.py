@@ -1,5 +1,5 @@
 import mailjet_rest
-from common import db_connection
+import db_connection
 from mailjet_rest import Client
 import os
 

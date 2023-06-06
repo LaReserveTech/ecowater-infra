@@ -1,6 +1,6 @@
 import os
 import logging
-from common import db_connection
+import db_connection
 from psycopg2.extensions import AsIs
 from getSummary import create_summary
 

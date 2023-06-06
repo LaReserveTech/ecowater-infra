@@ -2,7 +2,7 @@ import os
 import logging
 import datetime
 from email_validator import validate_email, EmailNotValidError
-from common import db_connection
+import db_connection
 
 # lambda environment variables
 SECRET_NAME = os.environ['secret_name']
