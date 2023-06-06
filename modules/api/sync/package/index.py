@@ -2,12 +2,12 @@ from typing import Optional
 from datetime import datetime
 import psycopg2
 import logging
+import requests
 import csv
-import data_provider
+
+from data_provider import get_data
 import geozone_repository
-import decree_provider
 import decree_repository
-import restriction_provider
 import restriction_repository
 import os
 import getCredentials_layer as gc
@@ -18,13 +18,9 @@ REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 
 def lambda_handler(_event, _context):
-    #connection = psycopg2.connect(database="ecowater", user="ecowater", password="ecowater", host="pg", port="5432") # TODO use environment variables
-    #connection.autocommit = True
-    #cursor = connection.cursor()
-    
     #Connect to the database
     credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
-          
+
     connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
     connection.autocommit = True
     cursor = connection.cursor()
@@ -32,23 +28,35 @@ def lambda_handler(_event, _context):
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.debug('Connected to the database')
 
-    #data_provider.get_data()
-    # todo replace the existing file reader by the file getted by the previous function
+    urls = get_data()
 
-    synchronize_decrees(cursor)
-    synchronize_restrictions(cursor)
+    synchronize_decrees(cursor, urls['decrees'])
+    synchronize_restrictions(cursor, urls['restrictions'])
 
     cursor.close()
     connection.close()
 
-def synchronize_decrees(cursor) -> None:
-    logging.info('Starting decrees synchronization')
-    decrees_content = decree_provider.get()
-    decrees_rows = csv.DictReader(decrees_content.splitlines(), delimiter=',')
+def get(url):
+    '''gets csv from url and parse the data '''
+    response = requests.get(url)
 
-    for row in decrees_rows:
+    if response.status_code != 200:
+        logging.error(f'Request to {url} failed with error status {response.status_code}.')
+        return None
+
+    decoded_content = response.content.decode('utf-8')
+
+    cr = csv.DictReader(decoded_content.splitlines(), delimiter=',')
+    return list(cr)
+
+def synchronize_decrees(cursor, url_decrees) -> None:
+    logging.info('Starting decrees synchronization')
+    decrees = get(url_decrees)
+    decrees_count, errors_count = 0, 0
+
+    for row in decrees:
         try:
-            geozone = geozone_repository.find_by_external_id(cursor, row['id_zone'])
+            geozone = geozone_repository.find_by_external_id(cursor, row.get('id_zone', None))
 
             if geozone is None:
                 logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
@@ -62,28 +70,30 @@ def synchronize_decrees(cursor) -> None:
                 'alert_level': row.get('nom_niveau').lower(),
             }
             decree_repository.save(cursor, decree)
+            decrees_count += 1
         except Exception as e:
-            logging.error('Failed to import decree: External ID: %s. Exception: %s', row.get('unique_key_arrete_zone_alerte', 'None'), str(e))
+            logging.error(f"Failed to import decree: External ID: {row.get('unique_key_arrete_zone_alerte', 'None')}. Exception: {str(e)}")
+            errors_count += 1
 
-    del decrees_content
-    del decrees_rows
-    logging.info('End of decrees synchronization')
+    logging.info(f"End of decrees synchronization: {decrees_count} created, {errors_count} errors")
 
-def synchronize_restrictions(cursor) -> None:
+def synchronize_restrictions(cursor, url_restrictions) -> None:
     logging.info('Starting restrictions synchronization')
-    restrictions_content = restriction_provider.get()
-    restrictions_rows = csv.DictReader(restrictions_content.splitlines(), delimiter=',')
 
-    for row in restrictions_rows:
+    retrictions = get(url_restrictions)
+    restrictions_count, errors_count = 0, 0
+
+    for row in retrictions:
         try:
             decree = decree_repository.find_by_external_id(cursor, row.get('unique_key_arrete_zone_alerte'))
-
             if decree is None:
                 logging.error('Failed to import restriction, decree not found. Decree External ID: %s', row.get('unique_key_arrete_zone_alerte', 'None'))
+                errors_count += 1
                 continue
 
+            external_id = row.get('unique_key_arrete_zone_alerte') + row.get('unique_key_restriction_alerte')
             restriction = {
-                'external_id': row.get('unique_key_arrete_zone_alerte') + row.get('unique_key_restriction_alerte'),
+                'external_id': external_id,
                 'decree_id': decree[0],
                 'restriction_level': row.get('nom_niveau_restriction'),
                 'user_individual': parse_restriction_user(row.get('concerne_particulier')),
@@ -97,14 +107,17 @@ def synchronize_restrictions(cursor) -> None:
                 'from_hour': parse_restriction_time(row.get('heure_debut'), row.get('unique_key_restriction_alerte')),
                 'to_hour': parse_restriction_time(row.get('heure_fin'), row.get('unique_key_restriction_alerte')),
             }
-
             restriction_repository.save(cursor, restriction)
-        except Exception as e:
-            logging.error('Failed to import restriction. Exception: %s', str(e))
+            restrictions_count += 1
 
-    del restrictions_content
-    del restrictions_rows
-    logging.info('End of restrictions synchronization')
+        except Exception as e:
+            logging.error(f"Failed to import restriction (external ID: {external_id}). Exception: {str(e)}")
+            errors_count += 1
+
+
+    # del restrictions_content
+    # del restrictions_rows
+    logging.info(f"End of restrictions synchronization: {restrictions_count} created, {errors_count} errors")
 
 def parse_restriction_user(user) -> bool:
     return True if user.lower() == "true" else False
