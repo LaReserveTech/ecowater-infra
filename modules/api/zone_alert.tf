@@ -31,7 +31,7 @@ resource "random_uuid" "lambda_src_hash" {
 
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_dir      = "${local.lambda_src_path}/package/"
+  source_dir       = "${local.lambda_src_path}/package/"
   output_file_mode = "0755"
   output_path      = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
 
@@ -123,6 +123,12 @@ resource "aws_lambda_permission" "zone_alert" {
 resource "aws_apigatewayv2_api" "zone_alert" {
   name          = "${local.name}_api-${local.environment}"
   protocol_type = "HTTP"
+  cors_configuration {
+    allow_origins = ["http://alerte-secheresse.fr"]
+    allow_methods = ["GET", "OPTIONS"]
+    allow_headers = ["Content-Type"]
+    max_age       = 300
+  }
 }
 
 resource "aws_apigatewayv2_integration" "zone_alert" {
