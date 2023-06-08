@@ -30,8 +30,12 @@ def lambda_handler(_event, _context):
 
     urls = get_data()
 
-    synchronize_decrees(cursor, urls['decrees'])
-    synchronize_restrictions(cursor, urls['restrictions'])
+    if urls['decrees']:
+        logging.debug(' urls decrees : ' + urls['decrees'] )
+        synchronize_decrees(cursor, urls['decrees'])
+    if urls['restrictions']:
+        logging.debug(' urls restrictions : ' + urls['restrictions'] )
+        synchronize_restrictions(cursor, urls['restrictions'])
 
     cursor.close()
     connection.close()
