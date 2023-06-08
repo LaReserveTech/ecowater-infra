@@ -2,9 +2,14 @@ import requests
 import json
 import logging
 
-# URL de l'API à appeler
-DATASET='643d5f985c230e2b786c5602'
-url = 'https://demo.data.gouv.fr/api/1/datasets/' + DATASET
+# URL de l'API à appeler en preprod sur demo.data.gouv
+#DATASET='643d5f985c230e2b786c5602'
+#url = 'https://demo.data.gouv.fr/api/1/datasets/' + DATASET
+
+
+# URL de l'API à appeler en prod sur data.gouv
+DATASET='6470b39cfbad66b8c265ada3'
+url = 'https://data.gouv.fr/api/1/datasets/' + DATASET
 
 def get_data():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,7 +30,7 @@ def get_data():
         title = resource['title']
         if 'Restriction' in title:
             restictions_url = resource['url']
-        if 'Arretes' in title:
+        if 'Arrêtés' in title:
             decrees_url = resource['url']
 
     return {
