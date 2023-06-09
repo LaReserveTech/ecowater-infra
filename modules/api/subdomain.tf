@@ -19,24 +19,24 @@
 #}
 
 #SUBDOMAIN DELEGATION FOR API (cloudflare)
-resource "aws_route53_zone" "cf-ecowater" {
-  name = var.cf-sub-domain[terraform.workspace]
-}
-
-resource "aws_route53_record" "cf-ecowater" {
-  allow_overwrite = true
-  name            = var.cf-sub-domain[terraform.workspace]
-  ttl             = 172800
-  type            = "NS"
-  zone_id         = aws_route53_zone.cf-ecowater.zone_id
-
-  records = [
-    aws_route53_zone.cf-ecowater.name_servers[0],
-    aws_route53_zone.cf-ecowater.name_servers[1],
-    aws_route53_zone.cf-ecowater.name_servers[2],
-    aws_route53_zone.cf-ecowater.name_servers[3],
-  ]
-}
+#resource "aws_route53_zone" "cf-ecowater" {
+#  name = var.cf-sub-domain[terraform.workspace]
+#}
+#
+#resource "aws_route53_record" "cf-ecowater" {
+#  allow_overwrite = true
+#  name            = var.cf-sub-domain[terraform.workspace]
+#  ttl             = 172800
+#  type            = "NS"
+#  zone_id         = aws_route53_zone.cf-ecowater.zone_id
+#
+#  records = [
+#    aws_route53_zone.cf-ecowater.name_servers[0],
+#    aws_route53_zone.cf-ecowater.name_servers[1],
+#    aws_route53_zone.cf-ecowater.name_servers[2],
+#    aws_route53_zone.cf-ecowater.name_servers[3],
+#  ]
+#}
 
 #SUBDOMAIN DELEGATION FOR API in fr.eu.org (cloudflare)
 resource "aws_route53_zone" "cf-fr-ecowater" {

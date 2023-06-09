@@ -13,7 +13,7 @@ locals {
   data_synchro_src_path = "${path.module}/sync"
 
   enable_cron = {
-    "dev" = false
-    "pro" = true
+    "dev"  = false
+    "prod" = true
   }
 }

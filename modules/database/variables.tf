@@ -10,7 +10,7 @@ variable "ec2_instance_type" {
   type = map(any)
   default = {
     dev  = "t2.nano"
-    prod = "t2.micro"
+    prod = "t2.micro" #Free Tier
   }
 }
 
