@@ -113,7 +113,7 @@ resource "aws_apigatewayv2_api" "email_subscription" {
   name          = "${local.name}_email_subscription-${local.environment}"
   protocol_type = "HTTP"
   cors_configuration {
-    allow_origins = ["http://alerte-secheresse.fr"]
+    allow_origins = ["http://alerte-secheresse.fr", "https://eco-water.webflow.io"]
     allow_methods = ["POST", "OPTIONS"]
     allow_headers = ["Content-Type"]
     max_age       = 300

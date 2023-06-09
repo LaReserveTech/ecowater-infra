@@ -4,6 +4,7 @@ import getCredentials_layer as gc
 import psycopg2
 import datetime
 from email_validator import validate_email, EmailNotValidError
+import json
 
 #Lambda environment variables
 SECRET_NAME = os.environ['secret_name']
@@ -52,33 +53,31 @@ def lambda_handler(event, context):
         }
       
       #2/Validate parameters
-      parameters = event['queryStringParameters']
+      parameters = json.loads(event['body'])
       
-      if parameters.get('longitude') is not None and parameters.get('latitude') is not None and parameters.get('email') is not None:
-        try:
-          if isinstance (float(parameters['longitude']), float) and isinstance (float(parameters['latitude']), float): #TODO Check long/lat format
-            logging.debug("The parameters are valid")
-            
-          else:
-            logging.error("Long and/or lat is not in decimal degrees (DD)")
-            return {
-                "statusCode": "422",
-                "body": "Longitude and/or latitude is not of the correct format. Must be decimal degrees (DD)"
-            }
-        except Exception as exeption_params:
-          logging.error("Parameters not validated. Exception: %s", str(exeption_params))
-          
-      else:
-        logging.error("A parameter is missing")
-        return {
-            "statusCode": "400",
-            "body": "A parameter is missing. Parameters should be 'longitude','latitude' and 'email'"
-        }
+      longitude = parameters.get('longitude')
+      latitude = parameters.get('latitude')
+      email = parameters.get('email')
       
-      #Get the coordinates and email from the API query
-      longitude = parameters['longitude']
-      latitude = parameters['latitude']
-      email = parameters['email']
+      if None in [longitude, latitude, email]:
+          logging.error("A parameter is missing")
+          logging.error("Received parameters: longitude={}, latitude={}, email={}".format(longitude, latitude, email))
+          return {
+              "statusCode": "400",
+              "body": "A parameter is missing. Parameters should be 'longitude', 'latitude', and 'email'"
+          }
+      
+      try:
+          longitude = float(longitude)
+          latitude = float(latitude)
+          logging.debug("The parameters are valid")
+      except ValueError:
+          logging.error("Longitude and/or latitude is not in decimal degrees (DD)")
+          logging.error("Received parameters: longitude={}, latitude={}, email={}".format(longitude, latitude, email))
+          return {
+              "statusCode": "422",
+              "body": "Longitude and/or latitude is not of the correct format. Must be decimal degrees (DD)"
+          }
       
       #3/Validate email & insert it into the DB
       if validate_emails(email):
