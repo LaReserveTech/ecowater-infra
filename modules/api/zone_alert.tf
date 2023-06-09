@@ -124,7 +124,7 @@ resource "aws_apigatewayv2_api" "zone_alert" {
   name          = "${local.name}_api-${local.environment}"
   protocol_type = "HTTP"
   cors_configuration {
-    allow_origins = ["http://alerte-secheresse.fr", "https://eco-water.webflow.io/"]
+    allow_origins = ["http://alerte-secheresse.fr", "https://eco-water.webflow.io"]
     allow_methods = ["GET", "OPTIONS"]
     allow_headers = ["Content-Type"]
     max_age       = 300
