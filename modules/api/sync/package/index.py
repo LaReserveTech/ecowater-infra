@@ -72,6 +72,7 @@ def synchronize_decrees(cursor, url_decrees) -> None:
                 'start_date': datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d'),
                 'end_date': datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d'),
                 'alert_level': row.get('nom_niveau').lower(),
+                'document': row.get('chemin_fichier'),
             }
             decree_repository.save(cursor, decree)
             decrees_count += 1
