@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
-import psycopg2
+import db_connection
+from common import connect_to_local_db
 import logging
 import requests
 import csv
@@ -10,18 +11,17 @@ import geozone_repository
 import decree_repository
 import restriction_repository
 import os
-import getCredentials_layer as gc
 
-#Lambda environment variables
+# lambda environment variables
 SECRET_NAME = os.environ['secret_name']
 REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 
 def lambda_handler(_event, _context):
-    #Connect to the database
-    credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
+    # connect to database
+    connection = db_connection.connect_to_db()
+    # connection = connect_to_local_db()
 
-    connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
     connection.autocommit = True
     cursor = connection.cursor()
 

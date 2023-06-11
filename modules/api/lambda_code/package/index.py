@@ -1,7 +1,6 @@
 import os
 import logging
-import getCredentials_layer as gc
-import psycopg2
+import db_connection
 from psycopg2.extensions import AsIs
 from getSummary import create_summary
 
@@ -11,17 +10,11 @@ REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 RAW_PATH = os.environ['raw_path']
 
-#logging.getLogger().setLevel(logging.DEBUG)
 
-#Connect to the database
-credential = gc.getCredentials(SECRET_NAME, REGION_NAME, DB)
-
-connection = psycopg2.connect(user=credential['username'], password=credential['password'], host=credential['host'], database=credential['db'])
-connection.autocommit = True
-logging.debug("Connected to the database")
-
-#Query the database
 def lambda_handler(event, context):
+    connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
+    RAW_PATH = os.environ['raw_path']
+
     if event['rawPath'] == RAW_PATH:
       # get the coordinates from the API query
       longitude = event['queryStringParameters']['longitude']
@@ -54,6 +47,9 @@ def lambda_handler(event, context):
 
         cursor.close()
         connection.commit()
+
+        # for restriction in restriction_level :
+          #base64.b64encode(restriction).decode('utf-8')
 
         # create the summary from the data
         results_dict = create_summary(data)
