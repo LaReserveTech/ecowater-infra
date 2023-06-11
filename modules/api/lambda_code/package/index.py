@@ -10,9 +10,12 @@ REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 RAW_PATH = os.environ['raw_path']
 
+# Connect to database. Keep out of lambda_handler
+connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
+connection.autocommit = True
+logging.debug("Connected to the database")
 
 def lambda_handler(event, context):
-    connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
     RAW_PATH = os.environ['raw_path']
 
     if event['rawPath'] == RAW_PATH:

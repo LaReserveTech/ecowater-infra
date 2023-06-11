@@ -15,6 +15,11 @@ subscribtion_date = f"{datetime.datetime.now():%Y-%m-%d}"
 
 #logging.getLogger().setLevel(logging.DEBUG)
 
+# Connect to database. Keep out of lambda_handler
+connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
+connection.autocommit = True
+logging.debug("Connected to the database")
+
 def validate_emails(email):
   try:
     # Check that the email address is valid.
@@ -33,7 +38,6 @@ def validate_emails(email):
 
 # Insert email into the database
 def lambda_handler(event, context):
-    connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
     RAW_PATH = os.environ['raw_path']
 
     if event['rawPath'] == RAW_PATH:
