@@ -1,9 +1,7 @@
-#Lambda Layer (will be deployed only once to be used for both environments)
+#Lambda Layer
 resource "aws_lambda_layer_version" "mailjet_libs_layer" {
-  count = local.environment == "dev" ? 1 : 0
-
   filename   = "${local.email_src_path}/package/libs_mailjet.zip"
-  layer_name = "libs_mailjet"
+  layer_name = "libs_mailjet-${local.environment}"
 
   compatible_runtimes = ["python3.9"]
 
@@ -48,9 +46,9 @@ module "lambda_email_alerting" {
   create_package         = false
   create_function        = true
   layers = [
-    aws_lambda_layer_version.psycopg2_layer[0].arn,
-    aws_lambda_layer_version.getCredentials_layer[0].arn,
-    aws_lambda_layer_version.mailjet_libs_layer[0].arn,
+    aws_lambda_layer_version.psycopg2_layer.arn,
+    aws_lambda_layer_version.getCredentials_layer.arn,
+    aws_lambda_layer_version.mailjet_libs_layer.arn,
   ]
   local_existing_package = "${local.email_src_path}/${local.environment}/${random_uuid.email_src_hash.result}.zip"
   publish                = true

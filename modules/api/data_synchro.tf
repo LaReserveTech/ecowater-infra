@@ -1,9 +1,7 @@
 #Lambda Layer (will be deployed only once to be used for both environments)
 resource "aws_lambda_layer_version" "libs_requests_layer" {
-  count = local.environment == "dev" ? 1 : 0
-
   filename   = "${local.data_synchro_src_path}/libs_requests.zip"
-  layer_name = "libs_requests"
+  layer_name = "libs_requests-${local.environment}"
 
   compatible_runtimes = ["python3.9"]
 
@@ -49,9 +47,9 @@ module "lambda_data_synchro" {
   create_package         = false
   create_function        = true
   layers = [
-    aws_lambda_layer_version.psycopg2_layer[0].arn,
-    aws_lambda_layer_version.getCredentials_layer[0].arn,
-    aws_lambda_layer_version.libs_requests_layer[0].arn,
+    aws_lambda_layer_version.psycopg2_layer.arn,
+    aws_lambda_layer_version.getCredentials_layer.arn,
+    aws_lambda_layer_version.libs_requests_layer.arn,
   ]
   local_existing_package = "${local.data_synchro_src_path}/${local.environment}/${random_uuid.data_synchro_src_hash.result}.zip"
   allowed_triggers = {

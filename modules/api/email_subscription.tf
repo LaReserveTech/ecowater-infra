@@ -1,9 +1,7 @@
-#Lambda Layer (will be deployed only once to be used for both environments)
+#Lambda Layer
 resource "aws_lambda_layer_version" "email_validator_layer" {
-  count = local.environment == "dev" ? 1 : 0
-
   filename   = "${local.email_sub_src_path}/package/email_validator.zip"
-  layer_name = "email_validator"
+  layer_name = "email_validator-${local.environment}"
 
   compatible_runtimes = ["python3.9"]
 
@@ -48,9 +46,9 @@ module "lambda_email_subscription" {
   create_package         = false
   create_function        = true
   layers = [
-    aws_lambda_layer_version.psycopg2_layer[0].arn,
-    aws_lambda_layer_version.getCredentials_layer[0].arn,
-    aws_lambda_layer_version.email_validator_layer[0].arn,
+    aws_lambda_layer_version.psycopg2_layer.arn,
+    aws_lambda_layer_version.getCredentials_layer.arn,
+    aws_lambda_layer_version.email_validator_layer.arn,
   ]
   local_existing_package = "${local.email_sub_src_path}/${local.environment}/${random_uuid.email_sub_src_hash.result}.zip"
   publish                = true

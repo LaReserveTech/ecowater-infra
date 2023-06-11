@@ -14,21 +14,21 @@ variable "db_creds_kms" {
   type = string
 }
 
-variable "sub-domain" {
-  type = map(string)
-  default = {
-    dev  = "api-dev.alerte-secheresse.fr"
-    prod = "api.alerte-secheresse.fr"
-  }
-}
-
-variable "cf-sub-domain" {
-  type = map(string)
-  default = {
-    dev  = "alerte-secheresse-dev.eu.org"
-    prod = "alerte-secheresse.eu.org"
-  }
-}
+#variable "sub-domain" {
+#  type = map(string)
+#  default = {
+#    dev  = "api-dev.alerte-secheresse.fr"
+#    prod = "api.alerte-secheresse.fr"
+#  }
+#}
+#
+#variable "cf-sub-domain" {
+#  type = map(string)
+#  default = {
+#    dev  = "alerte-secheresse-dev.eu.org"
+#    prod = "alerte-secheresse.eu.org"
+#  }
+#}
 
 variable "cf-fr-sub-domain" {
   type = map(string)
