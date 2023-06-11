@@ -10,7 +10,7 @@ resource "aws_lambda_layer_version" "psycopg2_layer" {
 
 resource "aws_lambda_layer_version" "getCredentials_layer" {
   filename   = "${local.lambda_src_path}/getCredentials_layer.zip"
-  layer_name = "getCredentials"
+  layer_name = "getCredentials-${local.environment}"
 
   compatible_runtimes = ["python3.9"]
 
