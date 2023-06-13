@@ -27,7 +27,7 @@ CREATE TABLE decree(
     document TEXT NOT NULL
 );
 
-CREATE TABLE restriction (
+CREATE TABLE restriction(
     id SERIAL PRIMARY KEY,
     external_id VARCHAR(64) NOT NULL UNIQUE,
     decree_id INT REFERENCES decree (id) NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE restriction (
     to_hour SMALLINT
 );
 
-CREATE TABLE alert_subscription (
+CREATE TABLE alert_subscription(
     id SERIAL PRIMARY KEY,
     email VARCHAR(254) UNIQUE NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
