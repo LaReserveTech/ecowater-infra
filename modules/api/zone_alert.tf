@@ -9,12 +9,12 @@ resource "aws_lambda_layer_version" "psycopg2_layer" {
 }
 
 resource "aws_lambda_layer_version" "getCredentials_layer" {
-  filename   = "${local.lambda_src_path}/getCredentials_layer.zip"
-  layer_name = "getCredentials-${local.environment}"
+  filename   = "${path.module}/common/db_connection.zip"
+  layer_name = "db_connection-${local.environment}"
 
   compatible_runtimes = ["python3.9"]
 
-  source_code_hash = filebase64sha256("${local.lambda_src_path}/getCredentials_layer.zip")
+  source_code_hash = filebase64sha256("${path.module}/common/db_connection.zip")
 }
 
 #Lambda function for API integration with DB

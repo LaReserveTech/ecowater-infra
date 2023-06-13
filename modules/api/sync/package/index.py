@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime
-import db_connection
-from common import connect_to_local_db
+import db_connection #Comment when testing in local machine
+#from common import connect_to_local_db #For testing in local machine
 import logging
 import requests
 import csv
@@ -19,7 +19,7 @@ DB = os.environ['db']
 
 def lambda_handler(_event, _context):
     # connect to database
-    connection = db_connection.connect_to_db()
+    connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
     # connection = connect_to_local_db()
 
     connection.autocommit = True
