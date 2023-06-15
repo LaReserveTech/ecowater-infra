@@ -1,5 +1,7 @@
 from data_provider import get_mocked_restrictions
 
+PDF_URL = "https://propluvia-data.s3.gra.io.cloud.ovh.net/pdf/"
+
 def create_summary(restrictions_data):
   restrictions_dict = {
     "sensibilisation": {},
@@ -38,7 +40,7 @@ def create_summary(restrictions_data):
 
   result_dict = {
     "niveau-alerte": restrictions_data[0][0],
-    "pdf": "dummy-pdf.fr",
+    "document": f"{PDF_URL}{restrictions_data[0][8]}",
     "restrictions": restrictions_dict
   }
 
