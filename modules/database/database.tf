@@ -43,10 +43,11 @@ resource "aws_db_instance" "ecowater" {
   username = var.database_username
   password = var.database_password
 
-  skip_final_snapshot = true
+  skip_final_snapshot = local.final_snap[local.environment]
   maintenance_window  = "Sat:02:00-Sat:05:00"
 
-  apply_immediately = true
+  apply_immediately   = true
+  deletion_protection = local.db_protection[local.environment]
 
   publicly_accessible    = false
   availability_zone      = "eu-west-3c"
@@ -67,7 +68,7 @@ resource "aws_db_instance" "read-replica1-ecowater" {
 
   replicate_source_db = aws_db_instance.ecowater.identifier
 
-  skip_final_snapshot = true
+  skip_final_snapshot = local.final_snap[local.environment]
   maintenance_window  = "Sat:02:00-Sat:05:00"
 
   apply_immediately = true
