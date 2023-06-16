@@ -36,11 +36,10 @@ def lambda_handler(event, context):
                 4326
           )
       )
-      AND re.%s IS TRUE
       AND de.start_date <= NOW()
       AND NOW() <= de.end_date;
       """
-      params = (longitude, latitude, AsIs(situation))
+      params = (longitude, latitude)
 
       try:
         cursor = connection.cursor()
