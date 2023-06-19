@@ -1,4 +1,14 @@
 from data_provider import get_mocked_restrictions
+import urllib.parse
+
+PDF_URL = "https://propluvia-data.s3.gra.io.cloud.ovh.net/pdf/"
+
+restriction_levels = {
+  "vigilance": 1,
+  "alerte": 2,
+  "alerte renforcée": 3,
+  "crise": 4,
+}
 
 PDF_URL = "https://propluvia-data.s3.gra.io.cloud.ovh.net/pdf/"
 
@@ -40,7 +50,8 @@ def create_summary(restrictions_data):
 
   result_dict = {
     "niveau-alerte": restrictions_data[0][0],
-    "document": f"{PDF_URL}{restrictions_data[0][8]}",
+    "niveau-alerte-chiffre": restriction_levels[restrictions_data[0][0]],
+    "document": f"{PDF_URL}{urllib.parse.quote_plus(restrictions_data[0][8])}",
     "restrictions": restrictions_dict
   }
 
