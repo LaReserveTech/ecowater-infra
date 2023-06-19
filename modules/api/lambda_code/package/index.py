@@ -9,9 +9,11 @@ SECRET_NAME = os.environ['secret_name']
 REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 RAW_PATH = os.environ['raw_path']
+ENV = os.environ['env']
 
 # Connect to database. Keep out of lambda_handler for performance
-connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
+read_replica = True if ENV == 'prod' else False
+connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB, read_replica)
 connection.autocommit = True
 logging.debug("Connected to the database")
 

@@ -1,4 +1,4 @@
-#Lambda Layers (will be deployed only once to be used for both environments)
+#Lambda Layers
 resource "aws_lambda_layer_version" "psycopg2_layer" {
   filename   = "${local.lambda_src_path}/psycopg2.zip"
   layer_name = "psycopg2-${local.environment}"
@@ -61,6 +61,7 @@ module "lambda_ecowater_zone" {
   local_existing_package = "${local.lambda_src_path}/${local.environment}/${random_uuid.lambda_src_hash.result}.zip"
   publish                = true
   environment_variables = {
+    env         = local.environment
     secret_name = "ecowater-${local.environment}"
     region_name = "eu-west-3"
     db          = local.name
