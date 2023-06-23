@@ -24,7 +24,8 @@ CREATE TABLE decree(
     alert_level VARCHAR(100) NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL,
-    document TEXT NOT NULL
+    document TEXT NOT NULL,
+    updated_at date NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE restriction(
