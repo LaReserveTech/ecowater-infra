@@ -1,7 +1,7 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import db_connection #Comment when testing in local machine
-#from common import connect_to_local_db #For testing in local machine
+# from common import connect_to_local_db #For testing in local machine
 import logging
 import requests
 import csv
@@ -56,31 +56,60 @@ def get(url):
 def synchronize_decrees(cursor, url_decrees) -> None:
     logging.info('Starting decrees synchronization')
     decrees = get(url_decrees)
-    decrees_count, errors_count = 0, 0
+    created_count, updated_count, no_update_count = 0, 0, 0
+    geozone_not_found_count, errors_count, ignored_count = 0, 0, 0
 
     for row in decrees:
+
+        if row.get('fin_validite_arrete') == '':
+            ignored_count += 1
+            continue
+
+        # we don't use the decrees whose end_date is < today - 3 days
+        end_date = datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d')
+        if end_date < datetime.today() - timedelta(days=3):
+            ignored_count += 1
+            continue
+
         try:
             geozone = geozone_repository.find_by_external_id(cursor, row.get('id_zone', None))
 
             if geozone is None:
-                logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
+                geozone_not_found_count += 1
+                # logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
                 continue
 
-            decree = {
-                'external_id': row.get('unique_key_arrete_zone_alerte'),
-                'geozone_id': geozone[0],
-                'start_date': datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d'),
-                'end_date': datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d'),
-                'alert_level': row.get('nom_niveau').lower(),
-                'document': row.get('chemin_fichier'),
-            }
-            decree_repository.save(cursor, decree)
-            decrees_count += 1
+            external_id = row.get('unique_key_arrete_zone_alerte')
+            if external_id is None:
+                logging.error('Failed to import decree, no external id provided.')
+                continue
+
+            existing_decree = decree_repository.find_by_external_id(cursor, external_id)
+
+            if existing_decree == None:
+                # create the new decree
+                decree = {
+                    'external_id': row.get('unique_key_arrete_zone_alerte'),
+                    'geozone_id': geozone[0],
+                    'start_date': datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d'),
+                    'end_date': datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d'),
+                    'alert_level': row.get('nom_niveau').lower(),
+                    'document': row.get('chemin_fichier'),
+                }
+                decree_repository.save(cursor, decree)
+                created_count += 1
+            elif existing_decree[1] != datetime.date(end_date):
+                # update the decree
+                decree_repository.update(cursor, external_id, end_date)
+                updated_count += 1
+            else:
+                no_update_count +=1
+
         except Exception as e:
             logging.error(f"Failed to import decree: External ID: {row.get('unique_key_arrete_zone_alerte', 'None')}. Exception: {str(e)}")
             errors_count += 1
 
-    logging.info(f"End of decrees synchronization: {decrees_count} created, {errors_count} errors")
+    logging.info(f"End of decrees synchronization: {created_count} created, {updated_count} updated, {no_update_count} not updated, {geozone_not_found_count} geozone not found, {ignored_count} ignored, {errors_count} errors")
 
 def synchronize_restrictions(cursor, url_restrictions) -> None:
     logging.info('Starting restrictions synchronization')
