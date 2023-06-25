@@ -24,8 +24,7 @@ CREATE TABLE decree(
     alert_level VARCHAR(100) NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL,
-    document TEXT NOT NULL,
-    updated_at date NOT NULL DEFAULT NOW()
+    document TEXT NOT NULL
 );
 
 CREATE TABLE restriction(
@@ -50,5 +49,13 @@ CREATE TABLE alert_subscription(
     email VARCHAR(254) UNIQUE NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
-    subscribed_at date NOT NULL
+    subscribed_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE event_store(
+    id SERIAL PRIMARY KEY,
+    stream_id INT NOT NULL,
+    type VARCHAR(25) NOT NULL,
+    payload JSONB,
+    occurred_at TIMESTAMPTZ NOT NULL
+)

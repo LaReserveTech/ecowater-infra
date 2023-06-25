@@ -14,28 +14,28 @@ url = 'https://data.gouv.fr/api/1/datasets/' + DATASET
 def get_data():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    # requête pour récupérer la liste des ressources disponibles
     response = requests.get(url)
 
     if response.status_code != 200:
-        logging.error(f'Request failed with error status {response.status_code}')
-        return None
+        logging.error(f'Request failed. status code: {response.status_code}, body: {response.content}')
+
+        return
 
     data = json.loads(response.text)
     resources = data['resources']
 
-    # extraction des urls pour récupérer les restrictions et les arrêtés
-    restictions_url, decrees_url = '', ''
+    restictions_url, decrees_url = None, None
     for resource in resources:
         title = resource['title']
+
         if 'Restriction' in title:
             restictions_url = resource['url']
-        if 'Arrêtés' in title:
+        if 'Arrêtés' == title:
             decrees_url = resource['url']
 
     return {
-        'restrictions': restictions_url,
         'decrees': decrees_url,
+        'restrictions': restictions_url,
     }
 
 if __name__ == '__main__':

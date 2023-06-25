@@ -1,9 +1,9 @@
 services:
   app:
     image: python
-    working_dir: /app
+    working_dir: /package
     volumes:
-      - ./package:/app
+      - ./package:/package
       - app_vendors:/usr/local/lib/python3.11/site-packages
   pg:
     image: postgis/postgis

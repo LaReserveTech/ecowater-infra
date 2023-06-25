@@ -1,16 +1,24 @@
-from typing import Optional
-from datetime import datetime, timedelta
-import db_connection #Comment when testing in local machine
-# from common import connect_to_local_db #For testing in local machine
+import os
 import logging
 import requests
 import csv
+from typing import Optional
+from datetime import datetime
 
+import psycopg2
+from psycopg2.extras import DictCursor
+
+# from common import connect_to_local_db # Local Docker database connection
+import db_connection # Dev/Prod database connection
 from data_provider import get_data
 import geozone_repository
 import decree_repository
 import restriction_repository
-import os
+from sync_report import SyncReport
+from event_dispatcher import EventDispatcher
+from decree import Decree
+from restriction import Restriction
+from event import Event
 
 # lambda environment variables
 SECRET_NAME = os.environ['secret_name']
@@ -18,24 +26,18 @@ REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
 
 def lambda_handler(_event, _context):
-    # connect to database
     connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
-    # connection = connect_to_local_db()
 
     connection.autocommit = True
-    cursor = connection.cursor()
+    cursor = connection.cursor(cursor_factory=DictCursor)
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.debug('Connected to the database')
 
     urls = get_data()
-
-    if urls['decrees']:
-        logging.debug(' urls decrees : ' + urls['decrees'] )
-        synchronize_decrees(cursor, urls['decrees'])
-    if urls['restrictions']:
-        logging.debug(' urls restrictions : ' + urls['restrictions'] )
-        synchronize_restrictions(cursor, urls['restrictions'])
+    event_dispatcher = EventDispatcher(cursor)
+    synchronize_decrees(cursor, urls, event_dispatcher)
+    synchronize_restrictions(cursor, urls)
 
     cursor.close()
     connection.close()
@@ -53,105 +55,121 @@ def get(url):
     cr = csv.DictReader(decoded_content.splitlines(), delimiter=',')
     return list(cr)
 
-def synchronize_decrees(cursor, url_decrees) -> None:
-    logging.info('Starting decrees synchronization')
-    decrees = get(url_decrees)
-    created_count, updated_count, no_update_count = 0, 0, 0
-    geozone_not_found_count, errors_count, ignored_count = 0, 0, 0
+def synchronize_decrees(cursor, urls, event_dispatcher: EventDispatcher) -> None:
+    logging.info(f"Starting decrees synchronization, url: {urls.get('decrees', 'None')}")
+
+    if not urls.get('decrees'):
+        logging.error(f"Decrees synchronization failed, missing url: {urls.get('decrees', 'None')}")
+
+        return
+
+    decrees = get(urls.get('decrees'))
+    sync_report = SyncReport()
 
     for row in decrees:
-
-        if row.get('fin_validite_arrete') == '':
-            ignored_count += 1
-            continue
-
-        # we don't use the decrees whose end_date is < today - 3 days
-        end_date = datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d')
-        if end_date < datetime.today() - timedelta(days=3):
-            ignored_count += 1
-            continue
-
         try:
             geozone = geozone_repository.find_by_external_id(cursor, row.get('id_zone', None))
-
             if geozone is None:
-                geozone_not_found_count += 1
-                # logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
+                logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
+                sync_report.error_count += 1
+
                 continue
 
             external_id = row.get('unique_key_arrete_zone_alerte')
             if external_id is None:
                 logging.error('Failed to import decree, no external id provided.')
+                sync_report.error_count += 1
+
                 continue
 
-            existing_decree = decree_repository.find_by_external_id(cursor, external_id)
+            decree = Decree(
+                None,
+                row.get('unique_key_arrete_zone_alerte'),
+                geozone.get('id'),
+                row.get('nom_niveau').lower(),
+                datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d').date(),
+                datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d').date(),
+                row.get('chemin_fichier')
+            )
 
-            if existing_decree == None:
-                # create the new decree
-                decree = {
-                    'external_id': row.get('unique_key_arrete_zone_alerte'),
-                    'geozone_id': geozone[0],
-                    'start_date': datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d'),
-                    'end_date': datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d'),
-                    'alert_level': row.get('nom_niveau').lower(),
-                    'document': row.get('chemin_fichier'),
-                }
-                decree_repository.save(cursor, decree)
-                created_count += 1
-            elif existing_decree[1] != datetime.date(end_date):
-                # update the decree
-                decree_repository.update(cursor, external_id, end_date)
-                updated_count += 1
-            else:
-                no_update_count +=1
+            existing_decree = decree_repository.find_by_external_id(cursor, decree.external_id)
+
+            if None == existing_decree:
+                decree_id = decree_repository.insert(cursor, decree)
+                sync_report.created_count += 1
+                event_dispatcher.dispatch(Event.DECREE_CREATION, decree_id, None)
+
+                continue
+
+            if decree.end_date == existing_decree.end_date:
+                existing_decree.repeal(decree.end_date)
+                decree_repository.update(cursor, existing_decree)
+                sync_report.updated_count += 1
+                event_dispatcher.dispatch(Event.DECREE_REPEAL, existing_decree.id, None)
+
+                continue
+
+            if decree.alert_level != existing_decree.alert_level:
+                logging.warning(f"Decree alert level has been modified but ignored. ID: {existing_decree.id}, External ID: {existing_decree.external_id}, Persisted Alert Level: {existing_decree.alert_level}, Incomming Alert Level: {decree.alert_level}")
+
+            if decree.geozone_id != existing_decree.geozone_id:
+                logging.warning(f"Decree geozone has been modified but ignored. ID: {existing_decree.id}, External ID: {existing_decree.external_id}, Persisted Geozone ID: {existing_decree.geozone_id}, Incomming Geozone ID: {decree.geozone_id}")
+
+            sync_report.unchanged_count += 1
 
         except Exception as e:
             logging.error(f"Failed to import decree: External ID: {row.get('unique_key_arrete_zone_alerte', 'None')}. Exception: {str(e)}")
-            errors_count += 1
+            sync_report.error_count += 1
 
-    logging.info(f"End of decrees synchronization: {created_count} created, {updated_count} updated, {no_update_count} not updated, {geozone_not_found_count} geozone not found, {ignored_count} ignored, {errors_count} errors")
+    logging.info(f"End of decrees synchronization. {sync_report}")
 
-def synchronize_restrictions(cursor, url_restrictions) -> None:
-    logging.info('Starting restrictions synchronization')
+def synchronize_restrictions(cursor, urls) -> None:
+    logging.info(f"Starting restrictions synchronization, url: {urls.get('restrictions', 'None')}")
 
-    retrictions = get(url_restrictions)
-    restrictions_count, errors_count = 0, 0
+    if not urls.get('restrictions'):
+        logging.error(f"Restrictions synchronization failed, missing url: {urls.get('restrictions', 'None')}")
+
+        return
+
+    retrictions = get(urls.get('restrictions'))
+    sync_report = SyncReport()
 
     for row in retrictions:
         try:
             decree = decree_repository.find_by_external_id(cursor, row.get('unique_key_arrete_zone_alerte'))
             if decree is None:
                 logging.error('Failed to import restriction, decree not found. Decree External ID: %s', row.get('unique_key_arrete_zone_alerte', 'None'))
-                errors_count += 1
+                sync_report.error_count += 1
+
                 continue
 
             external_id = row.get('unique_key_arrete_zone_alerte') + row.get('unique_key_restriction_alerte')
-            restriction = {
-                'external_id': external_id,
-                'decree_id': decree[0],
-                'restriction_level': row.get('nom_niveau_restriction'),
-                'user_individual': parse_restriction_user(row.get('concerne_particulier')),
-                'user_company': parse_restriction_user(row.get('concerne_entreprise')),
-                'user_community': parse_restriction_user(row.get('concerne_collectivite')),
-                'user_farming': parse_restriction_user(row.get('concerne_exploitation')),
-                'theme': row.get('nom_thematique'),
-                'label': row.get('nom_usage'),
-                'description': row.get('nom_usage_personnalise'),
-                'specification': row.get('niveau_alerte_restriction_texte'),
-                'from_hour': parse_restriction_time(row.get('heure_debut'), row.get('unique_key_restriction_alerte')),
-                'to_hour': parse_restriction_time(row.get('heure_fin'), row.get('unique_key_restriction_alerte')),
-            }
-            restriction_repository.save(cursor, restriction)
-            restrictions_count += 1
+
+            restriction = Restriction(
+                None,
+                external_id,
+                decree.id,
+                row.get('nom_niveau_restriction'),
+                parse_restriction_user(row.get('concerne_particulier')),
+                parse_restriction_user(row.get('concerne_entreprise')),
+                parse_restriction_user(row.get('concerne_collectivite')),
+                parse_restriction_user(row.get('concerne_exploitation')),
+                row.get('nom_thematique'),
+                row.get('nom_usage'),
+                row.get('nom_usage_personnalise'),
+                row.get('niveau_alerte_restriction_texte'),
+                parse_restriction_time(row.get('heure_debut'), row.get('unique_key_restriction_alerte')),
+                parse_restriction_time(row.get('heure_fin'), row.get('unique_key_restriction_alerte')),
+            )
+
+            restriction_repository.save(cursor, restriction) # TODO replace `restriction_repository.save()` by 2 methods: one for creation and another for update
+            sync_report.updated_count += 1
 
         except Exception as e:
             logging.error(f"Failed to import restriction (external ID: {external_id}). Exception: {str(e)}")
-            errors_count += 1
+            sync_report.error_count += 1
 
-
-    # del restrictions_content
-    # del restrictions_rows
-    logging.info(f"End of restrictions synchronization: {restrictions_count} created, {errors_count} errors")
+    logging.info(f"End of restrictions synchronization. {sync_report}")
 
 def parse_restriction_user(user) -> bool:
     return True if user.lower() == "true" else False
