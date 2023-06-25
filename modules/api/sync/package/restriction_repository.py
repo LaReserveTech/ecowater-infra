@@ -1,10 +1,6 @@
-def wipe(cursor) -> None:
-    query = 'TRUNCATE restriction'
-    cursor.execute(query)
+from restriction import Restriction
 
-    return
-
-def save(cursor, restriction) -> None:
+def save(cursor, restriction: Restriction) -> None:
     query = """
         INSERT INTO restriction (
             external_id,
@@ -39,21 +35,20 @@ def save(cursor, restriction) -> None:
         ;
     """
     parameters = (
-        restriction.get('external_id'),
-        restriction.get('decree_id'),
-        restriction.get('restriction_level'),
-        restriction.get('user_individual'),
-        restriction.get('user_company'),
-        restriction.get('user_community'),
-        restriction.get('user_farming'),
-        restriction.get('theme'),
-        restriction.get('label'),
-        restriction.get('description'),
-        restriction.get('specification'),
-        restriction.get('from_hour'),
-        restriction.get('to_hour'),
+        restriction.external_id,
+        restriction.decree_id,
+        restriction.restriction_level,
+        restriction.user_individual,
+        restriction.user_company,
+        restriction.user_community,
+        restriction.user_farming,
+        restriction.theme,
+        restriction.label,
+        restriction.description,
+        restriction.specification,
+        restriction.from_hour,
+        restriction.to_hour,
     )
-    cursor.execute(query,
-    parameters)
+    cursor.execute(query, parameters)
 
     return

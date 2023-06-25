@@ -1,21 +1,36 @@
-from datetime import datetime, timedelta
+from typing import Optional
+from decree import Decree
 
-def find_by_external_id(cursor, external_id: str):
-    query = 'SELECT id, end_date FROM decree WHERE external_id = %s'
+def find_by_external_id(cursor, external_id: str) -> Optional[Decree]:
+    query = 'SELECT * FROM decree WHERE external_id = %s'
     parameters = (external_id,)
     cursor.execute(query, parameters)
 
-    return cursor.fetchone()
+    result = cursor.fetchone()
 
-def save(cursor, decree) -> None:
-    query = 'INSERT INTO decree (external_id, geozone_id, alert_level, start_date, end_date, document) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (external_id) DO UPDATE SET geozone_id = EXCLUDED.geozone_id, alert_level = EXCLUDED.alert_level, start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date, document = EXCLUDED.document;'
-    parameters = (decree.get('external_id'), decree.get('geozone_id'), decree.get('alert_level'), decree.get('start_date'), decree.get('end_date'), decree.get('document'))
-    cursor.execute(query, parameters)
-    return
+    if not result:
+        return None
 
-def update(cursor, external_id, end_date) -> None:
-    query = 'UPDATE decree SET end_date = %s, updated_at=%s WHERE external_id = %s;'
-    current_date = datetime.today() + timedelta(days=1)
-    parameters = (end_date, current_date, external_id)
+    return Decree(
+        id=result.get('id'),
+        external_id=result.get('external_id'),
+        geozone_id=result.get('geozone_id'),
+        alert_level=result.get('alert_level'),
+        start_date=result.get('start_date'),
+        end_date=result.get('end_date'),
+        document=result.get('document')
+    )
+
+def insert(cursor, decree: Decree) -> int:
+    query = 'INSERT INTO decree (external_id, geozone_id, alert_level, start_date, end_date, document) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;'
+    parameters = (decree.external_id, decree.geozone_id, decree.alert_level, decree.start_date, decree.end_date, decree.document)
     cursor.execute(query, parameters)
+
+    return cursor.fetchone()[0]
+
+def update(cursor, decree: Decree) -> None:
+    query = 'UPDATE decree SET end_date = %s WHERE id = %s;'
+    parameters = (decree.end_date, decree.id)
+    cursor.execute(query, parameters)
+
     return
