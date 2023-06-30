@@ -61,7 +61,7 @@ resource "aws_route53_record" "cf-fr-ecowater" {
 
 #ACM PUBLIC CERTIFICATE
 #resource "aws_acm_certificate" "api-ecowater_cert" {
-#  domain_name       = "*.${var.sub-domain[terraform.workspace]}"
+#  domain_name       = "*.${var.cf-fr-sub-domain[terraform.workspace]}"
 #  validation_method = "DNS"
 #
 #  lifecycle {
@@ -83,9 +83,8 @@ resource "aws_route53_record" "cf-fr-ecowater" {
 #  records         = [each.value.record]
 #  ttl             = 60
 #  type            = each.value.type
-#  zone_id         = aws_route53_zone.api-ecowater.zone_id
+#  zone_id         = aws_route53_zone.cf-fr-ecowater.zone_id
 #}
-
 #resource "aws_acm_certificate_validation" "api-ecowater_dv" {
 #  certificate_arn         = aws_acm_certificate.api-ecowater_cert.arn
 #  validation_record_fqdns = [for record in aws_route53_record.api-ecowater_dv : record.fqdn]

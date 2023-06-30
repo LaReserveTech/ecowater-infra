@@ -21,14 +21,6 @@ variable "db_creds_kms" {
 #    prod = "api.alerte-secheresse.fr"
 #  }
 #}
-#
-#variable "cf-sub-domain" {
-#  type = map(string)
-#  default = {
-#    dev  = "alerte-secheresse-dev.eu.org"
-#    prod = "alerte-secheresse.eu.org"
-#  }
-#}
 
 variable "cf-fr-sub-domain" {
   type = map(string)
