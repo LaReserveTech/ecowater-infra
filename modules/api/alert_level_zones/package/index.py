@@ -3,7 +3,7 @@ import db_connection #Comment when testing in local machine
 #from common import connect_to_local_db #For testing in local machine
 import logging
 
-# lambda environment variables
+#Lambda environment variables
 SECRET_NAME = os.environ['secret_name']
 REGION_NAME = os.environ['region_name']
 DB = os.environ['db']
