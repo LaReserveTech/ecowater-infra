@@ -96,6 +96,14 @@ resource "aws_lambda_permission" "alert_level_zones" {
   source_arn    = var.db_arn
 }
 
+resource "aws_lambda_permission" "alert_level_zones_api" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lambda_alert_level_zones.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${local.region}:${local.account_id}:${aws_apigatewayv2_api.zone_alert.id}/*/*/alert_level"
+}
+
 #API configuration is in zone_alert.tf (same API for "global zones" and "zones" lambdas), 
 #the following are the stages and routes for the "global zones" lambda integration
 
