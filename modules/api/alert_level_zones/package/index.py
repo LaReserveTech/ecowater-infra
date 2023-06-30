@@ -16,20 +16,20 @@ RAW_PATH = os.environ['raw_path']
 read_replica = True if ENV == 'prod' else False
 connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB, read_replica)
 connection.autocommit = True
-cursor = connection.cursor()
-logging.debug('Connected to the database')
 
-# connection = connect_to_local_db()
+# connection = connect_to_local_db() #for local testing
 
 def lambda_handler(_event, _context):
     
     query = 'SELECT COUNT(alert_level), alert_level FROM decree de WHERE start_date <= NOW() AND NOW() <= end_date GROUP BY alert_level;'
     
+    cursor = connection.cursor()
+    logging.debug('Connected to the database')
+
     cursor.execute(query)
+    count = cursor.fetchall()
 
     cursor.close()
     connection.close()
 
-
-if __name__ == '__main__':
-    lambda_handler(None, None)
+    return count

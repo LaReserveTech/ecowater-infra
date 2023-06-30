@@ -1,8 +1,8 @@
 #Lambda function for getting the total number of zones that are in alert
 resource "random_uuid" "alert_level_zones_src_hash" {
   keepers = {
-    for filename in fileset("${local.alert_level_zones_src_path}", "*.py") :
-    filename => filemd5("${local.alert_level_zones_src_path}/${filename}")
+    for filename in fileset("${local.alert_level_zones_src_path}/package", "*.py") :
+    filename => filemd5("${local.alert_level_zones_src_path}/package/${filename}")
   }
 }
 
@@ -111,6 +111,6 @@ resource "aws_apigatewayv2_integration" "alert_level_zones" {
 
 resource "aws_apigatewayv2_route" "alert_level_zones" {
   api_id    = aws_apigatewayv2_api.zone_alert.id
-  route_key = "GET /global"
+  route_key = "GET /alert_level"
   target    = "integrations/${aws_apigatewayv2_integration.alert_level_zones.id}"
 }

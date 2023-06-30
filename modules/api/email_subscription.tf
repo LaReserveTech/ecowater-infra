@@ -11,8 +11,8 @@ resource "aws_lambda_layer_version" "email_validator_layer" {
 #Lambda function for email alerting
 resource "random_uuid" "email_sub_src_hash" {
   keepers = {
-    for filename in fileset("${local.email_sub_src_path}", "*.py") :
-    filename => filemd5("${local.email_sub_src_path}/${filename}")
+    for filename in fileset("${local.email_sub_src_path}/package", "*.py") :
+    filename => filemd5("${local.email_sub_src_path}/package/${filename}")
   }
 }
 
