@@ -11,5 +11,5 @@ locals {
   email_src_path             = "${path.module}/email_alerting_code"
   email_sub_src_path         = "${path.module}/email_sub_code"
   data_synchro_src_path      = "${path.module}/sync"
-  alert_level_zones_src_path = "${path.module}/global_zones"
+  alert_level_zones_src_path = "${path.module}/alert_level_zones"
 }
