@@ -113,7 +113,7 @@ resource "aws_cloudwatch_event_rule" "lambda_scheduling" {
 
   schedule_expression = "cron(0 0 * * ? *)"
 
-  is_enabled = local.enable_cron[local.environment]
+  is_enabled = true
 }
 
 resource "aws_cloudwatch_event_target" "lambda_scheduling" {
