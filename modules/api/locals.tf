@@ -12,9 +12,4 @@ locals {
   email_sub_src_path    = "${path.module}/email_sub_code"
   data_synchro_src_path = "${path.module}/sync"
   global_zones_src_path = "${path.module}/global_zones"
-
-  enable_cron = {
-    "dev"  = true
-    "prod" = true
-  }
 }
