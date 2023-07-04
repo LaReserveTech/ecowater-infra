@@ -101,7 +101,7 @@ def synchronize_decrees(cursor, urls, event_dispatcher: EventDispatcher) -> None
 
                 continue
 
-            if decree.end_date == existing_decree.end_date:
+            if decree.end_date != existing_decree.end_date:
                 existing_decree.repeal(decree.end_date)
                 decree_repository.update(cursor, existing_decree)
                 sync_report.updated_count += 1
