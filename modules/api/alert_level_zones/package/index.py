@@ -10,26 +10,22 @@ DB = os.environ['db']
 ENV = os.environ['env']
 RAW_PATH = os.environ['raw_path']
 
-#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s') # For debugging
-
-# Connect to database. Keep out of lambda_handler for performance
-read_replica = True if ENV == 'prod' else False
-connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB, read_replica)
-connection.autocommit = True
-
-# connection = connect_to_local_db() #for local testing
-
 def lambda_handler(_event, _context):
-    
-    query = 'SELECT COUNT(alert_level), alert_level FROM decree de WHERE start_date <= NOW() AND NOW() <= end_date GROUP BY alert_level;'
-    
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    read_replica = True if ENV == 'prod' else False
+    connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB, read_replica)
+    connection.autocommit = True
     cursor = connection.cursor()
     logging.debug('Connected to the database')
 
+    query = 'SELECT COUNT(alert_level), alert_level FROM decree de WHERE start_date <= NOW() AND NOW() <= end_date GROUP BY alert_level;'
+
     cursor.execute(query)
     count = cursor.fetchall()
+    count_dict = {row[1].replace("é", "e"): row[0] for row in count}
 
     cursor.close()
     connection.close()
 
-    return count
+    return count_dict
