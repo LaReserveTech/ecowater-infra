@@ -7,14 +7,8 @@ DROP TABLE IF EXISTS geozone;
 
 CREATE TABLE geozone (
     id SERIAL PRIMARY KEY,
-    id_zone INT,
-    code_zone VARCHAR(32),
-    type_zone VARCHAR(3),
-    nom_zone VARCHAR(200),
-    n_version INT,
-    code_dep VARCHAR(3),
-    nom_dep VARCHAR(60),
-    geom geometry(MultiPolygon, 4326)
+    external_id INT NOT NULL UNIQUE,
+    geometry geometry(MultiPolygon, 4326)
 );
 
 CREATE TABLE decree(

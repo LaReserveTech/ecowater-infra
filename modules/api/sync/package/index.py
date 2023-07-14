@@ -1,12 +1,17 @@
+import io
 import os
+import zipfile
 import logging
 import requests
 import csv
 from typing import Optional
 from datetime import datetime
+import traceback
 
 import psycopg2
 from psycopg2.extras import DictCursor
+import geopandas
+from shapely.geometry import MultiPolygon
 
 # from common import connect_to_local_db # Local Docker database connection
 import db_connection # Dev/Prod database connection
@@ -16,6 +21,7 @@ import decree_repository
 import restriction_repository
 from sync_report import SyncReport
 from event_dispatcher import EventDispatcher
+from geozone import Geozone
 from decree import Decree
 from restriction import Restriction
 from event import Event
@@ -36,6 +42,7 @@ def lambda_handler(_event, _context):
 
     urls = get_data()
     event_dispatcher = EventDispatcher(cursor)
+    synchronize_geozones(cursor, urls, event_dispatcher)
     synchronize_decrees(cursor, urls, event_dispatcher)
     synchronize_restrictions(cursor, urls)
 
@@ -55,7 +62,57 @@ def get(url):
     cr = csv.DictReader(decoded_content.splitlines(), delimiter=',')
     return list(cr)
 
-def synchronize_decrees(cursor, urls, event_dispatcher: EventDispatcher) -> None:
+def synchronize_geozones(cursor, urls: dict, event_dispatcher: EventDispatcher) -> None:
+    logging.info(f"Starting geozones synchronization, url: {urls.get('geozones', 'None')}")
+
+    if not urls.get('geozones'):
+        logging.error(f"Geozones synchronization failed, missing url: {urls.get('geozones', 'None')}")
+
+        return
+
+    sync_report = SyncReport()
+    filepaths = extract_geozone_files(urls, '/tmp')
+
+    gdf = geopandas.read_file(filepaths.get('shape_file'), crs=filepaths.get('projection_file'))
+    gdf = gdf.set_crs("EPSG:4326")
+
+    for (_, row) in gdf.iterrows():
+        try:
+            external_id = row.get('id_zone')
+            if external_id is None:
+                logging.error('Failed to import decree, no external id provided.')
+                sync_report.error_count += 1
+
+                continue
+
+            if None == row.get('geometry'):
+                logging.warning(f"Failed to import geozone, null geometry: External ID: {row.get('id_zone', 'None')}.")
+
+                continue
+
+            geometry = MultiPolygon([row.get('geometry')]).wkt if row.get('geometry').geom_type == 'Polygon' else row.get('geometry').wkt
+            geozone = Geozone(
+                id=None,
+                external_id=external_id,
+                geometry=geometry,
+            )
+
+            existing_geozone = geozone_repository.find_by_external_id(cursor, geozone.external_id)
+            if None == existing_geozone:
+                geozone_id = geozone_repository.insert(cursor, geozone)
+                sync_report.created_count += 1
+                event_dispatcher.dispatch(Event.GEOZONE_CREATION, geozone_id, None)
+
+                continue
+
+            sync_report.unchanged_count += 1
+        except Exception as e:
+            logging.error(f"Failed to import geozone: External ID: {row.get('id_zone', 'None')}. Exception: {str(e)}, Traceback: {traceback.print_exc()}")
+            sync_report.error_count += 1
+
+    logging.info(f"End of geozones synchronization. {sync_report}")
+
+def synchronize_decrees(cursor, urls: dict, event_dispatcher: EventDispatcher) -> None:
     logging.info(f"Starting decrees synchronization, url: {urls.get('decrees', 'None')}")
 
     if not urls.get('decrees'):
@@ -63,8 +120,8 @@ def synchronize_decrees(cursor, urls, event_dispatcher: EventDispatcher) -> None
 
         return
 
-    decrees = get(urls.get('decrees'))
     sync_report = SyncReport()
+    decrees = get(urls.get('decrees'))
 
     for row in decrees:
         try:
@@ -83,13 +140,13 @@ def synchronize_decrees(cursor, urls, event_dispatcher: EventDispatcher) -> None
                 continue
 
             decree = Decree(
-                None,
-                row.get('unique_key_arrete_zone_alerte'),
-                geozone.get('id'),
-                row.get('nom_niveau').lower(),
-                datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d').date(),
-                datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d').date(),
-                row.get('chemin_fichier')
+                id=None,
+                external_id=external_id,
+                geozone_id=geozone.get('id'),
+                alert_level=row.get('nom_niveau').lower(),
+                start_date=datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d').date(),
+                end_date=datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d').date(),
+                document=row.get('chemin_fichier'),
             )
 
             existing_decree = decree_repository.find_by_external_id(cursor, decree.external_id)
@@ -118,12 +175,12 @@ def synchronize_decrees(cursor, urls, event_dispatcher: EventDispatcher) -> None
             sync_report.unchanged_count += 1
 
         except Exception as e:
-            logging.error(f"Failed to import decree: External ID: {row.get('unique_key_arrete_zone_alerte', 'None')}. Exception: {str(e)}")
+            logging.error(f"Failed to import decree: External ID: {row.get('unique_key_arrete_zone_alerte', 'None')}. Exception: {str(e)}, Traceback: {traceback.print_exc()}")
             sync_report.error_count += 1
 
     logging.info(f"End of decrees synchronization. {sync_report}")
 
-def synchronize_restrictions(cursor, urls) -> None:
+def synchronize_restrictions(cursor, urls: dict) -> None:
     logging.info(f"Starting restrictions synchronization, url: {urls.get('restrictions', 'None')}")
 
     if not urls.get('restrictions'):
@@ -166,10 +223,29 @@ def synchronize_restrictions(cursor, urls) -> None:
             sync_report.updated_count += 1
 
         except Exception as e:
-            logging.error(f"Failed to import restriction (external ID: {external_id}). Exception: {str(e)}")
+            logging.error(f"Failed to import restriction (external ID: {external_id}). Exception: {str(e)}, Traceback: {traceback.print_exc()}")
             sync_report.error_count += 1
 
     logging.info(f"End of restrictions synchronization. {sync_report}")
+
+def extract_geozone_files(urls: dict, extraction_path: str) -> dict:
+    url = urls.get('geozones')
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        logging.error(f'Request to {url} failed with error status {response.status_code}.')
+
+        return None
+
+    zip_bytes = io.BytesIO(response.content)
+
+    with zipfile.ZipFile(zip_bytes, "r") as zip_ref:
+        zip_ref.extractall(extraction_path)
+
+    return {
+        'shape_file': extraction_path + '/all_zones.shp',
+        'projection_file': extraction_path + '/all_zones.prj'
+    }
 
 def parse_restriction_user(user) -> bool:
     return True if user.lower() == "true" else False

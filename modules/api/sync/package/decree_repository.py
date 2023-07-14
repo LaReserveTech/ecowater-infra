@@ -5,7 +5,6 @@ def find_by_external_id(cursor, external_id: str) -> Optional[Decree]:
     query = 'SELECT * FROM decree WHERE external_id = %s'
     parameters = (external_id,)
     cursor.execute(query, parameters)
-
     result = cursor.fetchone()
 
     if not result:
