@@ -12,9 +12,9 @@ def find_by_external_id(cursor, external_id: str) -> Optional[Geozone]:
         return None
 
     return Geozone(
-        id=result.get('id'),
-        external_id=result.get('external_id'),
-        geometry=result.get('geometry'),
+        id = result.get('id'),
+        external_id = result.get('external_id'),
+        geometry = result.get('geometry'),
     )
 
 def insert(cursor, geozone: Geozone) -> int:

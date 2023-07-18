@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS alert_subscription;
 DROP TABLE IF EXISTS restriction;
 DROP TABLE IF EXISTS decree;
 DROP TABLE IF EXISTS geozone;
+DROP TABLE IF EXISTS event_store;
 
 ------
 

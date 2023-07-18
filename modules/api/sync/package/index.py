@@ -35,16 +35,16 @@ def lambda_handler(_event, _context):
     connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
 
     connection.autocommit = True
-    cursor = connection.cursor(cursor_factory=DictCursor)
+    cursor = connection.cursor(cursor_factory = DictCursor)
 
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level = logging.DEBUG, format = '%(asctime)s - %(levelname)s - %(message)s')
     logging.debug('Connected to the database')
 
     urls = get_data()
     event_dispatcher = EventDispatcher(cursor)
     synchronize_geozones(cursor, urls, event_dispatcher)
     synchronize_decrees(cursor, urls, event_dispatcher)
-    synchronize_restrictions(cursor, urls)
+    synchronize_restrictions(cursor, urls, event_dispatcher)
 
     cursor.close()
     connection.close()
@@ -58,8 +58,8 @@ def get(url):
         return None
 
     decoded_content = response.content.decode('utf-8')
+    cr = csv.DictReader(decoded_content.splitlines(), delimiter = ',', quotechar='"')
 
-    cr = csv.DictReader(decoded_content.splitlines(), delimiter=',')
     return list(cr)
 
 def synchronize_geozones(cursor, urls: dict, event_dispatcher: EventDispatcher) -> None:
@@ -73,7 +73,7 @@ def synchronize_geozones(cursor, urls: dict, event_dispatcher: EventDispatcher) 
     sync_report = SyncReport()
     filepaths = extract_geozone_files(urls, '/tmp')
 
-    gdf = geopandas.read_file(filepaths.get('shape_file'), crs=filepaths.get('projection_file'))
+    gdf = geopandas.read_file(filepaths.get('shape_file'), crs = filepaths.get('projection_file'))
     gdf = gdf.set_crs("EPSG:4326")
 
     for (_, row) in gdf.iterrows():
@@ -92,9 +92,9 @@ def synchronize_geozones(cursor, urls: dict, event_dispatcher: EventDispatcher) 
 
             geometry = MultiPolygon([row.get('geometry')]).wkt if row.get('geometry').geom_type == 'Polygon' else row.get('geometry').wkt
             geozone = Geozone(
-                id=None,
-                external_id=external_id,
-                geometry=geometry,
+                id = None,
+                external_id = external_id,
+                geometry = geometry,
             )
 
             existing_geozone = geozone_repository.find_by_external_id(cursor, geozone.external_id)
@@ -125,6 +125,12 @@ def synchronize_decrees(cursor, urls: dict, event_dispatcher: EventDispatcher) -
 
     for row in decrees:
         try:
+            if not row.get('id_zone', None):
+                logging.error('Failed to import decree, geozone external id missing. Geozone External ID: %s', row.get('id_zone', 'None'))
+                sync_report.error_count += 1
+
+                continue
+
             geozone = geozone_repository.find_by_external_id(cursor, row.get('id_zone', None))
             if geozone is None:
                 logging.error('Failed to import decree, geozone not found. Geozone External ID: %s', row.get('id_zone', 'None'))
@@ -140,13 +146,13 @@ def synchronize_decrees(cursor, urls: dict, event_dispatcher: EventDispatcher) -
                 continue
 
             decree = Decree(
-                id=None,
-                external_id=external_id,
-                geozone_id=geozone.get('id'),
-                alert_level=row.get('nom_niveau').lower(),
-                start_date=datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d').date(),
-                end_date=datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d').date(),
-                document=row.get('chemin_fichier'),
+                id = None,
+                external_id = external_id,
+                geozone_id = geozone.id,
+                alert_level = row.get('nom_niveau').lower(),
+                start_date = datetime.strptime(row.get('debut_validite_arrete'), '%Y-%m-%d').date(),
+                end_date = datetime.strptime(row.get('fin_validite_arrete'), '%Y-%m-%d').date(),
+                document = row.get('chemin_fichier'),
             )
 
             existing_decree = decree_repository.find_by_external_id(cursor, decree.external_id)
@@ -173,14 +179,13 @@ def synchronize_decrees(cursor, urls: dict, event_dispatcher: EventDispatcher) -
                 logging.warning(f"Decree geozone has been modified but ignored. ID: {existing_decree.id}, External ID: {existing_decree.external_id}, Persisted Geozone ID: {existing_decree.geozone_id}, Incomming Geozone ID: {decree.geozone_id}")
 
             sync_report.unchanged_count += 1
-
         except Exception as e:
             logging.error(f"Failed to import decree: External ID: {row.get('unique_key_arrete_zone_alerte', 'None')}. Exception: {str(e)}, Traceback: {traceback.print_exc()}")
             sync_report.error_count += 1
 
     logging.info(f"End of decrees synchronization. {sync_report}")
 
-def synchronize_restrictions(cursor, urls: dict) -> None:
+def synchronize_restrictions(cursor, urls: dict, event_dispatcher: EventDispatcher) -> None:
     logging.info(f"Starting restrictions synchronization, url: {urls.get('restrictions', 'None')}")
 
     if not urls.get('restrictions'):
@@ -193,6 +198,12 @@ def synchronize_restrictions(cursor, urls: dict) -> None:
 
     for row in retrictions:
         try:
+            if not row.get('unique_key_arrete_zone_alerte', None):
+                logging.error('Failed to import restriction, decree external id missing. Deozone External ID: %s', row.get('unique_key_arrete_zone_alerte', 'None'))
+                sync_report.error_count += 1
+
+                continue
+
             decree = decree_repository.find_by_external_id(cursor, row.get('unique_key_arrete_zone_alerte'))
             if decree is None:
                 logging.error('Failed to import restriction, decree not found. Decree External ID: %s', row.get('unique_key_arrete_zone_alerte', 'None'))
@@ -203,25 +214,33 @@ def synchronize_restrictions(cursor, urls: dict) -> None:
             external_id = row.get('unique_key_arrete_zone_alerte') + row.get('unique_key_restriction_alerte')
 
             restriction = Restriction(
-                None,
-                external_id,
-                decree.id,
-                row.get('nom_niveau_restriction'),
-                parse_restriction_user(row.get('concerne_particulier')),
-                parse_restriction_user(row.get('concerne_entreprise')),
-                parse_restriction_user(row.get('concerne_collectivite')),
-                parse_restriction_user(row.get('concerne_exploitation')),
-                row.get('nom_thematique'),
-                row.get('nom_usage'),
-                row.get('nom_usage_personnalise'),
-                row.get('niveau_alerte_restriction_texte'),
-                parse_restriction_time(row.get('heure_debut'), row.get('unique_key_restriction_alerte')),
-                parse_restriction_time(row.get('heure_fin'), row.get('unique_key_restriction_alerte')),
+                id = None,
+                external_id = external_id,
+                decree_id = decree.id,
+                restriction_level = row.get('nom_niveau_restriction'),
+                user_individual = parse_restriction_user(row.get('concerne_particulier')),
+                user_company = parse_restriction_user(row.get('concerne_entreprise')),
+                user_community = parse_restriction_user(row.get('concerne_collectivite')),
+                user_farming = parse_restriction_user(row.get('concerne_exploitation')),
+                theme = row.get('nom_thematique'),
+                label = row.get('nom_usage'),
+                description = row.get('nom_usage_personnalise'),
+                specification = row.get('niveau_alerte_restriction_texte'),
+                from_hour = parse_restriction_time(row.get('heure_debut'), row.get('unique_key_restriction_alerte')),
+                to_hour = parse_restriction_time(row.get('heure_fin'), row.get('unique_key_restriction_alerte')),
             )
 
-            restriction_repository.save(cursor, restriction) # TODO replace `restriction_repository.save()` by 2 methods: one for creation and another for update
-            sync_report.updated_count += 1
+            existing_restriction = restriction_repository.find_by_external_id(cursor, external_id)
 
+            if None == existing_restriction:
+                restriction_id = restriction_repository.insert(cursor, restriction)
+                sync_report.created_count += 1
+                event_dispatcher.dispatch(Event.RESTRICTION_CREATION, restriction_id, None)
+            else:
+                restriction.id = existing_restriction.id
+                restriction_repository.update(cursor, restriction)
+                sync_report.updated_count += 1
+                event_dispatcher.dispatch(Event.RESTRICTION_MODIFICATION, restriction.id, None)
         except Exception as e:
             logging.error(f"Failed to import restriction (external ID: {external_id}). Exception: {str(e)}, Traceback: {traceback.print_exc()}")
             sync_report.error_count += 1
@@ -247,20 +266,20 @@ def extract_geozone_files(urls: dict, extraction_path: str) -> dict:
         'projection_file': extraction_path + '/all_zones.prj'
     }
 
-def parse_restriction_user(user) -> bool:
-    return True if user.lower() == "true" else False
+def parse_restriction_user(user: Optional[str]) -> bool:
+    return True if None != user and user.lower() == "True" else False
 
 def parse_restriction_time(time: str, restriction_external_id: str) -> Optional[int]:
-    if time.lower() == 'null':
+    if not time or time.lower() == 'null':
         return None
 
     try:
-        return int(time)
+        return int(float(time))
     except Exception as e:
         logging.warning(
-            'Failed to parse `from_hour` column. Restriction External ID: %s, From Hour Value: %s, Exception: %s',
-            'None' if restriction_external_id is None or restriction_external_id == "" else restriction_external_id,
-            'None' if time is None or time == "" else time,
+            'Failed to parse time. Restriction External ID: %s, Time Value: %s, Exception: %s',
+            'None' if not restriction_external_id else restriction_external_id,
+            'None' if not time else time,
             str(e)
         )
         return None
