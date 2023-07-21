@@ -17,17 +17,17 @@ def get_data():
 
     data = json.loads(response.text)
     resources = data['resources']
-    urls = {'restictions_url': None, 'decrees_url': None, 'geozones': None}
+    urls = {'restrictions': None, 'decrees': None, 'geozones': None}
 
     for resource in resources:
         title = resource['title']
 
-        if 'Restriction' in title:
-            urls['restictions_url'] = resource['url']
-        if 'Arrêtés' == title:
-            urls['decrees_url'] = resource['url']
         if 'Géométrie des zones' in title:
             urls['geozones'] = resource['url']
+        if 'Arrêtés' == title:
+            urls['decrees'] = resource['url']
+        if 'Restrictions' == title:
+            urls['restrictions'] = resource['url']
 
     return urls
 

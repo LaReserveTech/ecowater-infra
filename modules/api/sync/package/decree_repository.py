@@ -1,4 +1,5 @@
 from typing import Optional
+
 from decree import Decree
 
 def find_by_external_id(cursor, external_id: str) -> Optional[Decree]:
@@ -11,13 +12,13 @@ def find_by_external_id(cursor, external_id: str) -> Optional[Decree]:
         return None
 
     return Decree(
-        id=result.get('id'),
-        external_id=result.get('external_id'),
-        geozone_id=result.get('geozone_id'),
-        alert_level=result.get('alert_level'),
-        start_date=result.get('start_date'),
-        end_date=result.get('end_date'),
-        document=result.get('document')
+        id = result.get('id'),
+        external_id = result.get('external_id'),
+        geozone_id = result.get('geozone_id'),
+        alert_level = result.get('alert_level'),
+        start_date = result.get('start_date'),
+        end_date = result.get('end_date'),
+        document = result.get('document'),
     )
 
 def insert(cursor, decree: Decree) -> int:
