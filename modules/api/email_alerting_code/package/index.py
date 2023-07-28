@@ -54,6 +54,9 @@ def create_email(email_address):
 
 
 def lambda_handler(event, context):
+    logging.basicConfig(level = logging.DEBUG, format = '%(asctime)s - %(levelname)s - %(message)s')
+    logging.debug('Connected to the database')
+
     connection = db_connection.connect_to_db(SECRET_NAME, REGION_NAME, DB)
     # connection = connect_to_local_db()
     connection.autocommit = True
@@ -61,32 +64,31 @@ def lambda_handler(event, context):
 
     mailjet = Client(auth=(credential['mailjet_api_key'], credential['mailjet_api_secret']), version='v3.1')
 
-    # récupérer les events qui doivent être consommés
-    events = repositories.find_all_events(cursor)
+    # on récupère les events qui doivent être consommés
+    events = repositories.find_all_decree_events(cursor)
 
-    if events != None:
-        # pour chaque event
-        for event in events:
-            # on récupère le decree associé et sa geozone
-            stream_id = event[1]
-            decree = repositories.get_decree_by_id(cursor, stream_id)
-            if decree == None:
-                logging.error('Decree with id %s not found.', stream_id)
-                continue
+    for event in events:
+        # on récupère le decree associé et sa geozone
+        decree_id = event[1]
+        decree = repositories.get_decree_by_id(cursor, decree_id)
+        if decree == None:
+            logging.error('Decree with id %s not found.', decree_id)
+            continue
 
-            # on récupère les utilisateurs associés aux zones
-            geozone_id = decree.get_geozone_id()
-            email_addresses = repositories.get_user_emails_by_geozone_id(cursor, geozone_id)
+        # on récupère les utilisateurs associés à la zone
+        geozone_id = decree.get_geozone_id()
+        email_addresses = repositories.find_user_emails_by_geozone_id(cursor, geozone_id)
 
-            if len(email_addresses) > 0:
-                # on envoie les emails à chaque utilisateur
-                for email_address in email_addresses:
-                    email = create_email(email_address[0])
-                    result = mailjet.send.create(data=email)
-                    print(result.status_code)
-                    print(result.json())
+        # on envoie les emails à chaque utilisateur
+        for email_address in email_addresses:
+            email = create_email(email_address[0])
+            result = mailjet.send.create(data=email)
+            logging.info(f"Sending email to {email_address[0]}")
+            if (result.status != 200):
+                logging.error(f"Failed to send email to {email_address[0]} (decree_id: {decree})")
 
-            # TODO: on supprime l'event
+        # on supprime l'event
+        repositories.delete_event(cursor, event[0])
 
     return
 
