@@ -85,14 +85,25 @@ def synchronize_geozones(cursor, urls: dict, event_dispatcher: EventDispatcher) 
 
                 continue
 
+            if row.get('type_zone') == 'SUP':
+                type = 'surface_water'
+            elif row.get('type_zone') == 'SOU':
+                type = 'ground_water'
+            else:
+                logging.warning(f"Failed to import geozone, type not handled: Type: {row.get('type_zone')}, External ID: {row.get('id_zone', 'None')}.")
+
+                continue
+
             if None == row.get('geometry'):
                 logging.warning(f"Failed to import geozone, null geometry: External ID: {row.get('id_zone', 'None')}.")
 
                 continue
-
             geometry = MultiPolygon([row.get('geometry')]).wkt if row.get('geometry').geom_type == 'Polygon' else row.get('geometry').wkt
+
             geozone = Geozone(
                 id = None,
+                type = type,
+                name = row.get('nom_zone'),
                 external_id = external_id,
                 geometry = geometry,
             )
