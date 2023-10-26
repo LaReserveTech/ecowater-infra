@@ -9,6 +9,8 @@ DROP TABLE IF EXISTS event_store;
 CREATE TABLE geozone (
     id SERIAL PRIMARY KEY,
     external_id INT NOT NULL UNIQUE,
+    type VARCHAR(25) NOT NULL,
+    name VARCHAR(200) NOT NULL,
     geometry geometry(MultiPolygon, 4326)
 );
 
