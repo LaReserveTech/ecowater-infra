@@ -1,0 +1,39 @@
+service: ecowater
+frameworkVersion: "3"
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-west-3
+  vpc:
+    securityGroupIds:
+      - sg-0be658856297e3899
+    subnetIds:
+      - subnet-0d33d0cd93f1a9377
+  environment:
+    PGDATABASE: ${env:PGDATABASE}
+    PGHOST: ${env:PGHOST}
+    PGPORT: ${env:PGPORT}
+    PGUSER: ${env:PGUSER}
+    PGPASSWORD: ${env:PGPASSWORD}
+
+functions:
+  synchronize-geozones:
+    handler: handlers/synchronize-geozones.default
+    events:
+      - schedule: cron(0 2 * * ? *)
+    timeout: 60
+  synchronize-decrees:
+    handler: handlers/synchronize-decrees.default
+    events:
+      - schedule: cron(0 3 * * ? *)
+    timeout: 60
+  synchronize-restrictions:
+    handler: handlers/synchronize-restrictions.default
+    events:
+      - schedule: cron(0 4 * * ? *)
+    timeout: 600
+
+plugins:
+  - serverless-plugin-typescript

@@ -1,0 +1,13 @@
+# package directories
+node_modules
+jspm_packages
+.build
+
+# Serverless directories
+.serverless
+
+# Dotenv
+.env.*
+
+# Local files
+data/
