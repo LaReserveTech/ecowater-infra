@@ -1,5 +1,0 @@
-psycopg2
-requests
-email-validator
-geopandas
-mailjet-rest
