@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { Handler } from "aws-lambda";
 import { Client } from "pg";
-import { fetchDecrees } from '../utils/decree-provider'
+import { fetchDecrees } from "../utils/decree-provider";
 
-const synchronize: Handler = async (_event: any) => {
+const synchronize: Handler = async () => {
   console.log("Decrees synchronziation started");
   const client = new Client();
   await client.connect();
@@ -15,19 +15,19 @@ const synchronize: Handler = async (_event: any) => {
     console.log("Fetched decrees");
 
     for (const decree of decrees) {
-      if (decree['statut_arrete'] === 'Terminé') {
+      if (decree["statut_arrete"] === "Terminé") {
         continue;
       }
 
       const res = await client.query(
         "SELECT id FROM geozone WHERE external_id = $1",
-        [decree["id_zone"]]
+        [decree["id_zone"]],
       );
 
       const geozoneId = res?.rows[0]?.id;
       if (!geozoneId) {
         console.warn(
-          `Decree cannot be synchronized, missing geozone. Geozone ID: ${decree["id_zone"]}, External ID: ${decree["unique_key_arrete_zone_alerte"]}`
+          `Decree cannot be synchronized, missing geozone. Geozone ID: ${decree["id_zone"]}, External ID: ${decree["unique_key_arrete_zone_alerte"]}`,
         );
 
         continue;

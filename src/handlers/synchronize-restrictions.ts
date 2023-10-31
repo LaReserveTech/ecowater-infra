@@ -3,7 +3,7 @@ import { Handler } from "aws-lambda";
 import { Client } from "pg";
 import { fetchRestrictions } from "../utils/restriction-provider";
 
-const synchronize: Handler = async (_event: any) => {
+const synchronize: Handler = async () => {
   console.log("Restrictions synchronziation started");
   const client = new Client();
   await client.connect();
@@ -17,7 +17,7 @@ const synchronize: Handler = async (_event: any) => {
     for (const restriction of restrictions) {
       const res = await client.query(
         "SELECT id FROM decree WHERE external_id = $1",
-        [restriction["unique_key_arrete_zone_alerte"]]
+        [restriction["unique_key_arrete_zone_alerte"]],
       );
 
       const decreeId = res?.rows[0]?.id;
@@ -69,7 +69,8 @@ const synchronize: Handler = async (_event: any) => {
       const toHour = !Number.isNaN(parsedToHour) ? parsedToHour : null;
 
       await client.query(query, [
-        restriction["unique_key_arrete_zone_alerte"] + restriction["unique_key_restriction_alerte"],
+        restriction["unique_key_arrete_zone_alerte"] +
+          restriction["unique_key_restriction_alerte"],
         decreeId,
         restriction["nom_niveau_restriction"],
         restriction["concerne_particulier"].toLowerCase() === "true",

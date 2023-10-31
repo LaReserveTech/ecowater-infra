@@ -10,7 +10,7 @@ const fetchRestrictionsHttp = async (): Promise<any> => {
     (resource) => "restrictions" === resource.title.toLowerCase()
   )[0];
 
-  const restrictionsCsvContent = await (await fetch(restrictionResource.url)).text()
+  const restrictionsCsvContent = await (await fetch(restrictionResource.url)).text();
 
   return parse(restrictionsCsvContent, {
     columns: true,

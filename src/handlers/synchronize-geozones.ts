@@ -3,7 +3,7 @@ import { Handler } from "aws-lambda";
 import { Client } from "pg";
 import { fetchGeoJson } from "../utils/geojson-provider";
 
-const synchronize: Handler = async (_event: any) => {
+const synchronize: Handler = async () => {
   console.log("Geozones synchronziation started");
   let client: any;
 
