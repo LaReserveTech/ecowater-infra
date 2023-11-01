@@ -27,6 +27,11 @@ Get area data (example data: Baixas 66390)
 serverless invoke local --function get-area-data  --path serverless-data/get-area-data.json
 ```
 
+Subscribe a new email (example data: Baixas 66390)
+```bash
+serverless invoke local --function email-subscription  --path serverless-data/email-subscription.json
+```
+
 ```bash
 serverless deploy --stage staging
 serverless deploy --stage prod

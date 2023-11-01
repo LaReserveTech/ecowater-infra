@@ -38,6 +38,10 @@ functions:
     handler: handlers/get-area-data.default
     events:
       - httpApi: 'GET /results'
+  email-subscription:
+    handler: handlers/email-subscription.default
+    events:
+      - httpApi: 'POST /subscribe'
 
 plugins:
   - serverless-plugin-typescript
