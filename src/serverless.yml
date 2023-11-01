@@ -1,5 +1,5 @@
 service: ecowater
-frameworkVersion: "3"
+frameworkVersion: '3'
 useDotenv: true
 
 provider:
@@ -35,6 +35,10 @@ functions:
           method: GET
           path: /alert-numbers
     memorySize: 256
+  email-subscription:
+    handler: handlers/email-subscription.default
+    events:
+      - httpApi: 'POST /subscribe'
   synchronize-geozones:
     handler: handlers/synchronize-geozones.default
     events:
