@@ -5,6 +5,7 @@
 Prerequisites:
 - Node & Npm
 - Docker & Docker Compose
+- Serverless
 
 ```bash
 <node-version-manager> use
@@ -14,10 +15,16 @@ docker compose up -d
 
 ## Serverless
 
+Synchronize geozones, decrees and restrictions
 ```bash
 serverless invoke local --function synchronize-geozones
 serverless invoke local --function synchronize-decrees
 serverless invoke local --function synchronize-restrictions
+```
+
+Get area data (example data: Baixas 66390)
+```bash
+serverless invoke local --function get-area-data  --path serverless-data/get-area-data.json
 ```
 
 ```bash

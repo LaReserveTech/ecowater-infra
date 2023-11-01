@@ -34,6 +34,10 @@ functions:
     events:
       - schedule: cron(0 4 * * ? *)
     timeout: 600
+  get-area-data:
+    handler: handlers/get-area-data.default
+    events:
+      - httpApi: 'GET /results'
 
 plugins:
   - serverless-plugin-typescript
