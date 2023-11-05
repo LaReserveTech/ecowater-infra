@@ -1,0 +1,19 @@
+{
+  "name": "aws-node-rest-api-typescript-simple",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {
+    "csv-parse": "^5.5.2",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "zlib": "^1.0.5"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.125",
+    "@types/node": "^20.8.9",
+    "serverless": "^3.36",
+    "serverless-offline": "^13.2.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^5.2.2"
+  }
+}

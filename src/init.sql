@@ -20,7 +20,7 @@ CREATE TABLE decree(
     geozone_id INT REFERENCES geozone (id) NOT NULL,
     alert_level VARCHAR(100) NOT NULL,
     start_date date NOT NULL,
-    end_date date NOT NULL,
+    end_date date,
     document TEXT NOT NULL
 );
 
@@ -55,4 +55,4 @@ CREATE TABLE event_store(
     type VARCHAR(25) NOT NULL,
     payload JSONB,
     occurred_at TIMESTAMPTZ NOT NULL
-)
+);

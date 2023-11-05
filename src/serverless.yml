@@ -1,0 +1,58 @@
+service: ecowater
+frameworkVersion: "3"
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-west-3
+  httpApi:
+    cors: true
+  vpc:
+    securityGroupIds:
+      - ${env:SECURITY_GROUP_ID}
+    subnetIds:
+      - ${env:SUBNET_ID}
+  environment:
+    PGDATABASE: ${env:PGDATABASE}
+    PGHOST: ${env:PGHOST}
+    PGPORT: ${env:PGPORT}
+    PGUSER: ${env:PGUSER}
+    PGPASSWORD: ${env:PGPASSWORD}
+
+functions:
+  restrictions-query:
+    handler: handlers/restrictions-query.default
+    events:
+      - httpApi:
+          method: GET
+          path: /restrictions
+    memorySize: 256
+  alert-numbers-query:
+    handler: handlers/alert-numbers-query.default
+    events:
+      - httpApi:
+          method: GET
+          path: /alert-numbers
+    memorySize: 256
+  synchronize-geozones:
+    handler: handlers/synchronize-geozones.default
+    events:
+      - schedule: cron(0 2 * * ? *)
+    memorySize: 1024
+    timeout: 60
+  synchronize-decrees:
+    handler: handlers/synchronize-decrees.default
+    events:
+      - schedule: cron(0 3 * * ? *)
+    memorySize: 1024
+    timeout: 60
+  synchronize-restrictions:
+    handler: handlers/synchronize-restrictions.default
+    events:
+      - schedule: cron(0 4 * * ? *)
+    memorySize: 2048
+    timeout: 600
+
+plugins:
+  - serverless-plugin-typescript

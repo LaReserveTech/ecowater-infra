@@ -1,0 +1,13 @@
+{
+  "useTabs": false,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "printWidth": 120,
+  "semi": false,
+  "overrides": [
+    {
+      "files": "*.json.dist",
+      "options": { "parser": "json" }
+    }
+  ]
+}
