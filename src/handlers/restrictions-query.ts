@@ -60,7 +60,7 @@ export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
       AND re.${situation} IS TRUE;
     `
 
-    const { rows } = await client.query(query, [latitude, longitude])
+    const { rows } = await client.query(query, [longitude, latitude])
     if (rows.length < 1) {
       return {
         statusCode: 200,
