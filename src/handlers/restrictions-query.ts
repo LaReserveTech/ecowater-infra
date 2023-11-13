@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { Client } from 'pg'
+import { slugify } from '../utils/generate-restriction-slug'
 
 interface QueryParameters {
   latitude?: string
@@ -19,21 +20,21 @@ interface Error {
 }
 
 interface Output {
-  alertLevel: string|null,
-  alertLevelValue: number|null,
-  document: string|null,
-  restrictions: RestrictionOutput[]|null,
+  alertLevel: string | null
+  alertLevelValue: number | null
+  document: string | null
+  restrictions: RestrictionOutput[] | null
 }
 
 interface RestrictionOutput {
-  slug: string,
-  restrictionLevel: string,
-  theme: string,
-  label: string,
-  description: string,
-  specification: string,
-  fromHour: number,
-  toHour: number,
+  slug: string
+  restrictionLevel: string
+  theme: string
+  label: string
+  description: string
+  specification: string
+  fromHour: number
+  toHour: number
 }
 
 export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -174,14 +175,3 @@ const validateQuery = (queryParameters: QueryParameters): ErrorOutput | undefine
     }
   }
 }
-
-const slugify = (text: string) =>
-  text
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-')
