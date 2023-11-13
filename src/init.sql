@@ -54,5 +54,6 @@ CREATE TABLE event_store(
     stream_id INT NOT NULL,
     type VARCHAR(25) NOT NULL,
     payload JSONB,
-    occurred_at TIMESTAMPTZ NOT NULL
+    occurred_at TIMESTAMPTZ NOT NULL,
+    users_notified BOOLEAN NOT NULL DEFAULT false
 );

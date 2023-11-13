@@ -19,6 +19,8 @@ provider:
     PGPORT: ${env:PGPORT}
     PGUSER: ${env:PGUSER}
     PGPASSWORD: ${env:PGPASSWORD}
+    MJ_APIKEY_PUBLIC: ${env:MJ_APIKEY_PUBLIC}
+    MJ_APIKEY_PRIVATE: ${env:MJ_APIKEY_PRIVATE}
 
 functions:
   restrictions-query:
@@ -35,10 +37,16 @@ functions:
           method: GET
           path: /alert-numbers
     memorySize: 256
+  email-alerting:
+    handler: handlers/email-alerting.default
+    events:
+      - schedule: cron(0 2 * * ? *)
+    memorySize: 2048
   email-subscription:
     handler: handlers/email-subscription.default
     events:
       - httpApi: 'POST /subscribe'
+    memorySize: 128
   synchronize-geozones:
     handler: handlers/synchronize-geozones.default
     events:
