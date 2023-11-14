@@ -18,6 +18,24 @@ interface Error {
   [error: string]: string
 }
 
+interface Output {
+  alertLevel: string|null,
+  alertLevelValue: number|null,
+  document: string|null,
+  restrictions: RestrictionOutput[]|null,
+}
+
+interface RestrictionOutput {
+  slug: string,
+  restrictionLevel: string,
+  theme: string,
+  label: string,
+  description: string,
+  specification: string,
+  fromHour: number,
+  toHour: number,
+}
+
 export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   let client: Client | undefined
 
@@ -62,14 +80,16 @@ export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
 
     const { rows } = await client.query(query, [longitude, latitude])
     if (rows.length < 1) {
+      const output: Output = {
+        alertLevel: null,
+        alertLevelValue: null,
+        document: null,
+        restrictions: null,
+      }
+
       return {
         statusCode: 200,
-        body: JSON.stringify({
-          alertLevel: null,
-          alertLevelValue: null,
-          document: null,
-          restrictions: null,
-        }),
+        body: JSON.stringify(output),
       }
     }
 
@@ -96,12 +116,13 @@ export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
 
     const restrictionValues: Array<any> = Object.values(restrictionsUniqueCollection)
     const restrictions = restrictionValues.map((restriction) => {
-      const { alertLevel, document, ...rest } = restriction
+      restriction.slug = `${slugify(restriction.restrictionLevel)}-${slugify(restriction.label)}`
+      const { alertLevel, document, type, ...rest } = restriction
 
       return rest
     })
 
-    const output = {
+    const output: Output = {
       alertLevel: restrictionValues[0].alertLevel,
       alertLevelValue: alertNumberMapping[restrictionValues[0].alertLevel] ?? null,
       document: `https://propluvia-data.s3.gra.io.cloud.ovh.net/pdf/${restrictionValues[0].document}`,
@@ -153,3 +174,14 @@ const validateQuery = (queryParameters: QueryParameters): ErrorOutput | undefine
     }
   }
 }
+
+const slugify = (text: string) =>
+  text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')

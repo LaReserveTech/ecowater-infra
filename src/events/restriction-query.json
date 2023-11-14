@@ -51,8 +51,8 @@
     "resource": "/restrictions",
     "httpMethod": "GET",
     "queryStringParameters": {
-        "latitude": 4.757486999999999,
-        "longitude": 45.412782,
+        "longitude": 4.757486999999999,
+        "latitude": 45.412782,
         "situation": "user_individual"
     },
     "stageVariables": {}
