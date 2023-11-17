@@ -22,6 +22,11 @@ serverless invoke local --function restrictions-query -p events/restriction-quer
 serverless invoke local --function alert-numbers-query -p events/alert-numbers-query.json
 ```
 
+Subscribe a new email (example data: Baixas 66390)
+```bash
+serverless invoke local --function email-subscription  --path serverless-data/email-subscription.json
+```
+
 ```bash
 serverless deploy --stage staging
 serverless deploy --stage prod
