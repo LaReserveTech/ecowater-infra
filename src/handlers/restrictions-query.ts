@@ -116,7 +116,7 @@ export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
 
     const restrictionValues: Array<any> = Object.values(restrictionsUniqueCollection)
     const restrictions = restrictionValues.map((restriction) => {
-      restriction.slug = `${slugify(restriction.restrictionLevel)}-${slugify(restriction.label)}`
+      restriction.slug = `${slugify(restriction.restrictionLevel)}-${slugify(restriction.theme)}`
       const { alertLevel, document, type, ...rest } = restriction
 
       return rest
