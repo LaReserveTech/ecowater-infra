@@ -40,7 +40,7 @@ functions:
   email-alerting:
     handler: handlers/email-alerting.default
     events:
-      - schedule: cron(0 2 * * ? *)
+      - schedule: cron(0 10 * * ? *)
     memorySize: 2048
   email-subscription:
     handler: handlers/email-subscription.default
