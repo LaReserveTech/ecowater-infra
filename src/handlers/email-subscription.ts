@@ -12,6 +12,7 @@ const validateEmail = (email: string) => {
 
 type subscribeEmailEvent = {
   queryStringParameters: {
+    address?: string
     latitude?: number
     longitude?: number
     email?: string
@@ -20,13 +21,13 @@ type subscribeEmailEvent = {
 
 const subscribeEmail: Handler = async (event: subscribeEmailEvent) => {
   const {
-    queryStringParameters: { latitude, longitude, email },
+    queryStringParameters: { latitude, longitude, email, address },
   } = event
 
-  if (!latitude || !longitude || !email) {
+  if (!latitude || !longitude || !email || !address) {
     return {
       statusCode: '400',
-      body: "A parameter is missing. Parameters should be 'longitude', 'latitude', and 'email'",
+      body: "A parameter is missing. Parameters should be 'longitude', 'latitude', 'email' and 'address'.",
     }
   }
 
@@ -42,8 +43,17 @@ const subscribeEmail: Handler = async (event: subscribeEmailEvent) => {
   console.log('Connected to the database')
 
   try {
-    const query = `INSERT into alert_subscription (email, longitude, latitude, subscribed_at) VALUES ($1, $2, $3, $4);`
-    await client.query(query, [email, longitude, latitude, new Date()])
+    const checkQuery = `SELECT email FROM alert_subscription WHERE email = $1;`
+    const { rows } = await client.query(checkQuery, [email])
+    if (rows.length > 0) {
+      return {
+        statusCode: '400',
+        body: 'This email adress is already used in our database',
+      }
+    }
+
+    const query = `INSERT into alert_subscription (email, address, longitude, latitude, subscribed_at) VALUES ($1, $2, $3, $4, $5);`
+    await client.query(query, [email, address, longitude, latitude, new Date()])
     return {
       statusCode: '204',
       body: '',
