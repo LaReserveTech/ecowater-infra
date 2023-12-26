@@ -3,8 +3,10 @@
 ## Get Started
 
 Prerequisites:
+
 - Node & Npm
 - Docker & Docker Compose
+- Serverless
 
 ```bash
 <node-version-manager> use
@@ -18,13 +20,15 @@ docker compose up -d
 serverless invoke local --function synchronize-geozones
 serverless invoke local --function synchronize-decrees
 serverless invoke local --function synchronize-restrictions
+serverless invoke local --function email-alerting
 serverless invoke local --function restrictions-query -p events/restriction-query.json
 serverless invoke local --function alert-numbers-query -p events/alert-numbers-query.json
 ```
 
 Subscribe a new email (example data: Baixas 66390)
+
 ```bash
-serverless invoke local --function email-subscription  --path serverless-data/email-subscription.json
+serverless invoke local --function email-subscription  --path events/email-subscription.json
 ```
 
 ```bash
@@ -35,6 +39,7 @@ serverless deploy --stage prod
 ## SQL Commands
 
 Get center point long lat of the first geozone:
+
 ```sql
 SELECT gz.id, gz.name, ST_X(ST_Centroid(gz.geometry)) as longitude, ST_Y(ST_Centroid(gz.geometry)) as latitude, de.alert_level, re.user_individual
 FROM geozone AS gz
@@ -45,6 +50,7 @@ LIMIT 1;
 ```
 
 Find geozones by lat long:
+
 ```sql
 SELECT gz.id, gz.external_id, gz.type, gz.name, de.alert_level
 FROM geozone AS gz

@@ -21,7 +21,8 @@ CREATE TABLE decree(
     alert_level VARCHAR(100) NOT NULL,
     start_date date NOT NULL,
     end_date date,
-    document TEXT NOT NULL
+    document TEXT NOT NULL,
+    repealed BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE restriction(
@@ -54,5 +55,6 @@ CREATE TABLE event_store(
     stream_id INT NOT NULL,
     type VARCHAR(25) NOT NULL,
     payload JSONB,
-    occurred_at TIMESTAMPTZ NOT NULL
+    occurred_at TIMESTAMPTZ NOT NULL,
+    users_notified BOOLEAN NOT NULL DEFAULT false
 );
