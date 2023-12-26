@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.125",
-    "@types/node": "^20.9.0",
+    "@types/node": "^20.10.4",
     "@types/node-mailjet": "^3.3.11",
     "serverless": "^3.36",
     "serverless-offline": "^13.2.0",

@@ -45,6 +45,7 @@ CREATE TABLE restriction(
 CREATE TABLE alert_subscription(
     id SERIAL PRIMARY KEY,
     email VARCHAR(254) UNIQUE NOT NULL,
+    address VARCHAR(254) NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     subscribed_at TIMESTAMPTZ NOT NULL
